@@ -1,6 +1,7 @@
 import pandas as pd
 
 ratings = pd.read_csv("data/ml-latest-small/ratings.csv")
+print(ratings.head(10))
 
 # |U| , |I|, |E|
 n_usuarios = ratings["userId"].nunique()   # nunique = nº de valores distintos
