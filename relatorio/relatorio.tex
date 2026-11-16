@@ -1,0 +1,361 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{teorema}{Teorema}
+\newtheorem{proposicao}{Proposição}
+\theoremstyle{definition}
+\newtheorem{definicao}{Definição}
+
+% Marcação de partes ainda não escritas
+\newcommand{\afazer}[1]{\textcolor{red}{\textbf{[A FAZER: #1]}}}
+
+\title{Sistema de Recomendação Baseado em Grafos Bipartidos}
+\author{Alice Barros Lourencini Palaoro \and Felipe Augusto da Silva Cruz \and
+        Gabriel Andrade Souza \and Guilherme Henrique Pereira Cunha}
+\date{Matemática Discreta --- Novembro de 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\afazer{resumo de 5--8 linhas, escrever por último: problema, modelo (grafo
+bipartido e contagem de passeios), base MovieLens, principais resultados.}
+\end{abstract}
+
+% =====================================================================
+\section{Introdução}
+% =====================================================================
+
+\afazer{motivação (sistemas de recomendação em serviços de streaming e
+comércio eletrônico), ideia central do trabalho (recomendar contando
+passeios em um grafo) e organização do texto.}
+
+% =====================================================================
+\section{Modelagem}
+% =====================================================================
+
+\subsection{Grafo bipartido de interações}
+
+\begin{definicao}
+Um grafo $G = (V, E)$ é \emph{bipartido} se existe uma partição
+$V = U \cup I$, com $U \cap I = \emptyset$, tal que toda aresta de $E$ tem
+uma extremidade em $U$ e a outra em $I$.
+\end{definicao}
+
+Modelamos o problema com $U$ sendo o conjunto de usuários, $I$ o conjunto de
+itens (filmes) e uma aresta $\{u, i\} \in E$ sempre que o usuário $u$ avaliou
+o filme $i$. Não há arestas entre dois usuários nem entre dois filmes.
+
+\subsection{Matriz de biadjacência}
+
+\begin{definicao}
+Fixadas bijeções $U \to \{0, \dots, |U|-1\}$ e $I \to \{0, \dots, |I|-1\}$, a
+\emph{matriz de biadjacência} de $G$ é a matriz $B \in \{0,1\}^{|U| \times |I|}$
+dada por
+\[
+  B_{ui} =
+  \begin{cases}
+    1, & \text{se } \{u, i\} \in E,\\
+    0, & \text{caso contrário.}
+  \end{cases}
+\]
+\end{definicao}
+
+Diferente da matriz de adjacência usual, que é quadrada de ordem $|U|+|I|$,
+$B$ é retangular. As duas se relacionam por
+\[
+  A = \begin{pmatrix} 0 & B \\ B^{\mathsf T} & 0 \end{pmatrix}.
+\]
+
+A soma da linha $u$ de $B$ é o grau de $u$ (quantos filmes ele avaliou) e a
+soma da coluna $i$ é o grau de $i$ (quantos usuários o avaliaram). Como cada
+aresta tem exatamente uma extremidade em cada lado, vale a versão bipartida
+do lema do aperto de mãos:
+\[
+  \sum_{u \in U} \deg(u) = \sum_{i \in I} \deg(i) = |E|.
+\]
+
+\subsection{Produtos de $B$ e contagem de passeios}
+
+\paragraph{$BB^{\mathsf T}$ (usuário $\times$ usuário).}
+\[
+  (BB^{\mathsf T})_{uv} = \sum_{i \in I} B_{ui} B_{vi}.
+\]
+O produto $B_{ui}B_{vi}$ vale 1 exatamente quando $u$ e $v$ avaliaram $i$.
+Logo $(BB^{\mathsf T})_{uv}$ é o número de filmes em comum entre $u$ e $v$,
+que é também o número de passeios de comprimento 2 de $u$ a $v$
+($u \to i \to v$). A diagonal é o grau do usuário, e a matriz é simétrica,
+pois $(BB^{\mathsf T})^{\mathsf T} = BB^{\mathsf T}$.
+
+\paragraph{$BB^{\mathsf T}B$ (usuário $\times$ filme).}
+\[
+  S_{ui} = (BB^{\mathsf T}B)_{ui} = \sum_{v \in U} (BB^{\mathsf T})_{uv}\, B_{vi}.
+\]
+$S_{ui}$ conta os passeios de comprimento 3 da forma
+$u \to i' \to v \to i$: ``você viu $i'$, o usuário $v$ também viu $i'$, e $v$
+viu $i$''. Cada usuário $v$ que viu $i$ contribui com peso igual ao número de
+filmes que tem em comum com $u$. É uma forma de filtragem colaborativa obtida
+apenas por contagem.
+
+\begin{teorema}\label{teo:passeios}
+Seja $A$ a matriz de adjacência de um grafo. Para todo $k \geq 1$,
+$(A^k)_{xy}$ é o número de passeios de comprimento $k$ de $x$ a $y$.
+\end{teorema}
+
+\begin{proof}
+\afazer{prova por indução em $k$. Base: $k = 1$ (definição de $A$). Passo:
+$(A^{k+1})_{xy} = \sum_z (A^k)_{xz} A_{zy}$; todo passeio de comprimento
+$k+1$ de $x$ a $y$ é um passeio de comprimento $k$ de $x$ a algum $z$
+seguido da aresta $\{z, y\}$. Depois, mostrar que $(A^3)$ restrita ao bloco
+$U \times I$ é exatamente $BB^{\mathsf T}B$.}
+\end{proof}
+
+\paragraph{Passeios e caminhos.}
+O teorema conta \emph{passeios}, que podem repetir vértices. Por exemplo,
+se $u$ viu $i$, o passeio $u \to i \to u \to i$ existe; logo $S_{ui} \geq 1$
+para todo filme já visto. Por isso esses filmes são excluídos da
+recomendação. Já para um filme $i$ que $u$ \emph{não} viu, todo passeio
+$u \to i' \to v \to i$ é um caminho simples: $v \neq u$ (pois $v$ viu $i$ e
+$u$ não) e $i' \neq i$ (pois $u$ viu $i'$ e não viu $i$). Assim, nos itens
+candidatos à recomendação, passeios e caminhos coincidem.
+
+\paragraph{Regra de recomendação.}
+Para cada usuário $u$, recomendamos os $k$ filmes $i$ com $B_{ui} = 0$ de maior
+$S_{ui}$. A pontuação não é uma nota prevista nem uma probabilidade; serve
+apenas para ordenar.
+
+% =====================================================================
+\section{Exemplo ilustrativo}
+% =====================================================================
+
+Considere três usuários e quatro filmes: Ana viu \emph{Matrix} e
+\emph{Titanic}; Bruno viu \emph{Matrix}, \emph{Toy Story} e \emph{Up}; Carla
+viu \emph{Titanic} e \emph{Toy Story} (Figura~\ref{fig:exemplo}).
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    usr/.style={circle, draw, fill=blue!15, minimum size=1.1cm, font=\small},
+    itm/.style={rectangle, draw, fill=orange!20, minimum width=2cm,
+                minimum height=0.7cm, font=\small}]
+  \node[usr] (ana)   at (0, 0)    {Ana};
+  \node[usr] (bruno) at (0, -1.6) {Bruno};
+  \node[usr] (carla) at (0, -3.2) {Carla};
+  \node[itm] (mat) at (5, 0.4)   {Matrix};
+  \node[itm] (tit) at (5, -0.9)  {Titanic};
+  \node[itm] (toy) at (5, -2.2)  {Toy Story};
+  \node[itm] (up)  at (5, -3.5)  {Up};
+  \draw (ana) -- (mat);   \draw (ana) -- (tit);
+  \draw (bruno) -- (mat); \draw (bruno) -- (toy); \draw (bruno) -- (up);
+  \draw (carla) -- (tit); \draw (carla) -- (toy);
+\end{tikzpicture}
+\caption{Grafo bipartido do exemplo: usuários à esquerda, filmes à direita.}
+\label{fig:exemplo}
+\end{figure}
+
+Com as linhas na ordem (Ana, Bruno, Carla) e as colunas na ordem
+(Matrix, Titanic, Toy Story, Up):
+\[
+  B = \begin{pmatrix}
+    1 & 1 & 0 & 0\\
+    1 & 0 & 1 & 1\\
+    0 & 1 & 1 & 0
+  \end{pmatrix},
+  \qquad
+  BB^{\mathsf T} = \begin{pmatrix}
+    2 & 1 & 1\\
+    1 & 3 & 1\\
+    1 & 1 & 2
+  \end{pmatrix},
+  \qquad
+  BB^{\mathsf T}B = \begin{pmatrix}
+    3 & 3 & \mathbf{2} & \mathbf{1}\\
+    4 & \mathbf{2} & 4 & 3\\
+    \mathbf{2} & 3 & 3 & \mathbf{1}
+  \end{pmatrix}.
+\]
+Em negrito estão os filmes ainda não vistos. Por exemplo,
+$S_{\text{Ana},\,\text{Toy Story}} = 2$ corresponde aos caminhos
+Ana $\to$ Matrix $\to$ Bruno $\to$ Toy Story e
+Ana $\to$ Titanic $\to$ Carla $\to$ Toy Story. As recomendações são:
+Ana $\to$ \emph{Toy Story}, Bruno $\to$ \emph{Titanic} e
+Carla $\to$ \emph{Matrix}. Os valores foram calculados à mão e conferidos
+com o script \texttt{src/exemplo\_pequeno.py}.
+
+% =====================================================================
+\section{Base de dados}
+% =====================================================================
+
+Usamos a base \emph{MovieLens latest-small}, disponibilizada pelo GroupLens, com avaliações de 0{,}5 a 5{,}0 estrelas feitas
+por usuários do site MovieLens. Usamos o arquivo \texttt{ratings.csv} (pares
+usuário--filme--nota) e o \texttt{movies.csv} (títulos). As estatísticas da
+Tabela~\ref{tab:base} foram obtidas pelo script \texttt{src/explorar.py}.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lr}
+\toprule
+Medida & Valor \\
+\midrule
+Usuários $|U|$ & 610 \\
+Filmes $|I|$ (com ao menos uma avaliação) & 9\,724 \\
+Arestas $|E|$ & 100\,836 \\
+Pares (usuário, filme) repetidos & 0 \\
+Grau dos usuários: mín.\ / mediana / média / máx. & 20 / 70{,}5 / 165{,}3 / 2\,698 \\
+Grau dos filmes: mín.\ / mediana / média / máx. & 1 / 3 / 10{,}4 / 329 \\
+Filmes com grau 1 & 3\,446 (35\%) \\
+Densidade $|E| / (|U|\,|I|)$ & 1{,}7\% \\
+\bottomrule
+\end{tabular}
+\caption{Estatísticas do grafo bipartido construído a partir do MovieLens.}
+\label{tab:base}
+\end{table}
+
+Observações:
+\begin{itemize}
+  \item Não há pares repetidos, então cada linha do arquivo é uma aresta
+        distinta e $B$ tem apenas entradas 0 e 1. O lema do aperto de mãos
+        foi verificado: as duas somas de graus valem $100\,836 = |E|$.
+  \item O \texttt{movies.csv} lista 9\,742 filmes, mas 18 nunca foram
+        avaliados; por serem vértices isolados, ficam fora do grafo.
+  \item Todo usuário tem grau pelo menos 20, pois a base inclui apenas
+        usuários com no mínimo 20 avaliações.
+  \item Os graus dos filmes têm cauda longa: a média é cerca de 10, mas a
+        mediana é 3. Poucos filmes concentram muitas avaliações
+        (\emph{Forrest Gump}: 329; \emph{Um Sonho de Liberdade}: 317;
+        \emph{Pulp Fiction}: 307).
+  \item A densidade de 1{,}7\% significa que 98{,}3\% das
+        $610 \times 9\,724 \approx 5{,}9$ milhões de entradas de $B$ são
+        zero, o que justifica o armazenamento esparso.
+\end{itemize}
+
+% =====================================================================
+\section{Implementação}
+% =====================================================================
+
+O código está em Python, usando \texttt{pandas}, \texttt{numpy} e
+\texttt{scipy.sparse}.
+
+\paragraph{Construção de $B$ (\texttt{src/matriz.py}).}
+Os identificadores da base não são contíguos (\texttt{movieId} vai até
+193\,609, com apenas 9\,724 filmes). Por isso construímos explicitamente as
+bijeções da Definição de $B$: os identificadores distintos, em ordem
+crescente, recebem os índices $0, 1, \dots$. Cada aresta $(u, i)$ é então
+traduzida para a posição (linha, coluna), e $B$ é montada no formato esparso
+CSR (\emph{Compressed Sparse Row}), que armazena apenas as $|E|$ entradas não
+nulas. Conferimos que $B$ tem formato $610 \times 9\,724$, exatamente
+$100\,836$ entradas não nulas e que as somas de linhas e colunas reproduzem
+os graus da Tabela~\ref{tab:base}.
+
+\paragraph{Ordem das multiplicações.}
+Pela associatividade, $(BB^{\mathsf T})B = B(B^{\mathsf T}B)$, mas o custo é
+diferente: $BB^{\mathsf T}$ tem formato $610 \times 610$ (cerca de 372 mil
+entradas), enquanto $B^{\mathsf T}B$ tem formato $9\,724 \times 9\,724$
+(cerca de 94{,}5 milhões). Calculamos da esquerda para a direita.
+
+\paragraph{Esparsidade de $S$.}
+Embora $B$ seja esparsa, $S = BB^{\mathsf T}B$ tem 99{,}1\% das entradas não
+nulas: em três passos, quase todo usuário alcança quase todo filme. Por isso
+$S$ é convertida para uma matriz densa antes da ordenação.
+
+\paragraph{Recomendação (\texttt{src/recomendar.py}).}
+As posições dos filmes já vistos (as entradas não nulas de $B$) são zeradas
+em $S$, e para cada linha são tomados os 10 índices de maior pontuação. O
+cálculo completo leva menos de um segundo.
+
+% =====================================================================
+\section{Resultados preliminares}
+% =====================================================================
+
+A Tabela~\ref{tab:top10} mostra as recomendações para o usuário 1.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{rlr}
+\toprule
+\# & Filme & $S_{ui}$ \\
+\midrule
+1  & The Shawshank Redemption (1994) & 10\,745 \\
+2  & Terminator 2: Judgment Day (1991) & 10\,205 \\
+3  & The Sixth Sense (1999) & 9\,323 \\
+4  & The Godfather (1972) & 8\,942 \\
+5  & Die Hard (1988) & 8\,541 \\
+6  & The Lord of the Rings: The Fellowship of the Ring (2001) & 8\,461 \\
+7  & Speed (1994) & 8\,421 \\
+8  & Twelve Monkeys (1995) & 8\,402 \\
+9  & True Lies (1994) & 8\,225 \\
+10 & Aladdin (1992) & 8\,044 \\
+\bottomrule
+\end{tabular}
+\caption{Top-10 por $BB^{\mathsf T}B$ para o usuário 1.}
+\label{tab:top10}
+\end{table}
+
+As recomendações são plausíveis, mas pouco personalizadas
+(Tabela~\ref{tab:vies}).
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lr}
+\toprule
+Medida & Valor \\
+\midrule
+Filmes distintos somando os top-10 dos 610 usuários & 153 \\
+Sobreposição média com o top-10 por popularidade & 6{,}6 de 10 \\
+Grau mediano dos filmes recomendados & 211 \\
+Correlação entre $S_{ui}$ e $\deg(i)$ (usuário 1) & 0{,}96 \\
+Usuários que recebem \emph{Star Wars: Episode IV} & 331 \\
+\bottomrule
+\end{tabular}
+\caption{Indicadores de viés de popularidade do recomendador $BB^{\mathsf T}B$.}
+\label{tab:vies}
+\end{table}
+
+A explicação vem da própria fórmula: em
+$S_{ui} = \sum_v (BB^{\mathsf T})_{uv} B_{vi}$, um filme com muitos
+espectadores tem muitos termos não nulos, e os usuários de maior peso
+(muitos filmes em comum com $u$) tendem a ser os que viram muitos filmes,
+inclusive os populares. Vértices de grau alto atraem passeios. Esse viés
+motiva a comparação com um \emph{baseline} de popularidade e a normalização
+pelo grau, descritas a seguir.
+
+% =====================================================================
+\section{Baseline de popularidade}
+% =====================================================================
+
+\afazer{etapa 7: recomendar os filmes de maior grau não vistos.}
+
+% =====================================================================
+\section{Avaliação}
+% =====================================================================
+
+\afazer{etapa 8: divisão treino/teste, precision@10, recall@10 e hit rate;
+comparar $BB^{\mathsf T}B$ com popularidade.}
+
+% =====================================================================
+\section{Melhoria: normalização pelo grau}
+% =====================================================================
+
+\afazer{etapa 9: passeio aleatório / normalização pelo grau
+ou PageRank personalizado; repetir a avaliação e a
+Tabela~\ref{tab:vies}.}
+
+% =====================================================================
+\section{Conclusão}
+% =====================================================================
+
+\afazer{conclusão.}
+
+
+\end{document}
