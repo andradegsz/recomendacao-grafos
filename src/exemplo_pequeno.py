@@ -1,3 +1,11 @@
+"""Exemplo didático mínimo de recomendação via matriz de biadjacência.
+
+Ilustra passo a passo, com 3 usuários e 4 filmes, a construção da matriz de
+biadjacência B, o cálculo de caminhos de comprimento 2 (B·Bᵀ) e de
+comprimento 3 (S = B·Bᵀ·B), a remoção dos filmes já assistidos e a seleção
+da principal recomendação para cada usuário.
+"""
+
 import numpy as np
 
 usuarios = ["Ana", "Bruno", "Carla"]

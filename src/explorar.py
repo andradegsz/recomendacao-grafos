@@ -1,3 +1,11 @@
+"""Análise exploratória do grafo bipartido de avaliações (MovieLens).
+
+Carrega `ratings.csv` e calcula propriedades estruturais do grafo usuário-filme:
+número de vértices (|U|, |I|) e arestas (|E|), ocorrência de pares duplicados,
+distribuição dos graus de usuários e filmes, densidade da matriz de
+biadjacência e verificação do lema do aperto de mãos.
+"""
+
 import pandas as pd
 
 ratings = pd.read_csv("data/ml-latest-small/ratings.csv")

@@ -1,3 +1,11 @@
+"""Recomendador colaborativo baseado em passeios de comprimento 3 (B·Bᵀ·B).
+
+Calcula a matriz de pontuações S = B·Bᵀ·B, onde cada entrada S[u, i] conta o
+número de passeios de comprimento 3 entre o usuário u e o filme i no grafo
+bipartido, zerando itens já avaliados. Quando executado diretamente, exibe as
+Top-K recomendações para o primeiro usuário da base.
+"""
+
 import numpy as np
 import pandas as pd
 
