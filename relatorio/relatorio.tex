@@ -37,9 +37,11 @@ bipartido e contagem de passeios), base MovieLens, principais resultados.}
 \section{Introdução}
 % =====================================================================
 
-\afazer{motivação (sistemas de recomendação em serviços de streaming e
-comércio eletrônico), ideia central do trabalho (recomendar contando
-passeios em um grafo) e organização do texto.}
+
+\indent Atualmente, os algoritmos de recomendação desempenham um papel crucial em praticamente qualquer tipo de produto ou serviço digital. Tendo isso em vista, o presente projeto propõe a construção de uma solução baseada em grafos, em que os vértices representam usuários, produtos e categorias, e as arestas indicam as interações entre eles (como usuário-produto e produto-categoria). Para validar a abordagem, a implementação utilizou como estudo de caso a indústria de cinema e streaming, empregando uma base de dados de avaliações de usuários com o objetivo de recomendar títulos inéditos por meio de passeios estruturados no grafo.
+A ideia central do trabalho consiste em mapear e analisar os caminhos formados no grafo entre o usuário e os itens ainda não avaliados por ele. A partir das propriedades e características desses trajetos, o algoritmo pontua e seleciona os filmes mais adequados, baseando-se no histórico de consumo e nas preferências anteriores do indivíduo.
+Por fim, vale destacar que, apesar do domínio escolhido para este estudo, a arquitetura desenvolvida mantém sua relevância e versatilidade, podendo ser aplicada a qualquer ecossistema estruturado em usuários, itens e avaliações. Exemplos disso incluem plataformas de e-commerce de vestuário, serviços de streaming de música, livrarias digitais e marketplaces de eletrônicos, o que evidencia o alto potencial de generalização e escalabilidade do modelo proposto.
+
 
 % =====================================================================
 \section{Modelagem}
@@ -275,7 +277,7 @@ em $S$, e para cada linha são tomados os 10 índices de maior pontuação. O
 cálculo completo leva menos de um segundo.
 
 % =====================================================================
-\section{Resultados preliminares}\label{sec:resultados-preliminares}
+\section{Resultados preliminares}
 % =====================================================================
 
 A Tabela~\ref{tab:top10} mostra as recomendações para o usuário 1.
@@ -334,146 +336,14 @@ pelo grau, descritas a seguir.
 \section{Baseline de popularidade}
 % =====================================================================
 
-Para saber se a estrutura do grafo traz informação útil, comparamos o
-método com uma referência que não personaliza nada: recomendar a todos os
-usuários os filmes mais vistos da base. A pontuação do filme $i$ para o
-usuário $u$ é apenas o seu grau,
-\[
-  \mathrm{pop}_{ui} = \deg(i) = \sum_{v \in U} B_{vi},
-\]
-igual para todos os usuários. Como em $BB^{\mathsf T}B$, os filmes já vistos
-são excluídos e tomamos os 10 de maior pontuação (\texttt{src/popularidade.py}).
-Como todo filme do grafo tem grau pelo menos 1, zerar a pontuação dos filmes
-vistos basta para que eles nunca apareçam no topo.
-
-Os dois métodos têm a mesma forma. Sendo $J$ a matriz $|U| \times |U|$ com
-todas as entradas iguais a 1,
-\[
-  \mathrm{pop}_{ui} = \sum_{v \in U} 1 \cdot B_{vi} = (JB)_{ui},
-  \qquad
-  S_{ui} = \sum_{v \in U} (BB^{\mathsf T})_{uv}\, B_{vi} = \big((BB^{\mathsf T})B\big)_{ui}.
-\]
-Na popularidade, todo usuário $v$ pesa igual; em $BB^{\mathsf T}B$, pesa mais
-quem tem mais filmes em comum com $u$. A única diferença entre os métodos é,
-portanto, a personalização pelos vizinhos, e é exatamente isso que a
-avaliação mede.
+\afazer{etapa 7: recomendar os filmes de maior grau não vistos.}
 
 % =====================================================================
 \section{Avaliação}
 % =====================================================================
 
-\subsection{Protocolo}
-
-Não é possível perguntar aos usuários se gostariam dos filmes recomendados.
-Usamos então uma avaliação \emph{offline}: escondemos parte das arestas
-conhecidas e verificamos se o método as reencontra. Em termos de grafos,
-trata-se de um problema de \emph{predição de arestas}: remover arestas de $G$
-e medir quantas o método reconstrói. O procedimento, implementado em
-\texttt{src/benchmark.py}, é:
-
-\begin{enumerate}
-  \item \textbf{Divisão treino/teste.} Para cada usuário, sorteamos 20\% das
-        suas avaliações para o conjunto de teste; o restante forma o treino.
-        O sorteio é feito por usuário, e não sobre a base inteira, para que
-        todos mantenham arestas no treino: como o grau mínimo é 20, cada
-        usuário fica com pelo menos 16. Usamos uma semente aleatória fixa
-        (42) para que o experimento seja reprodutível.
-  \item \textbf{Treino.} Montamos a matriz $B_{\text{treino}}$ apenas com as
-        arestas de treino, usando as mesmas bijeções da base completa, de
-        modo que a coluna $k$ representa sempre o mesmo filme.
-  \item \textbf{Recomendação.} Cada método recebe somente
-        $B_{\text{treino}}$ e produz o top-10 de cada usuário, excluindo os
-        filmes do treino. Os filmes escondidos continuam como candidatos.
-  \item \textbf{Comparação.} Para cada usuário $u$, comparamos a lista
-        recomendada $R_u$ ($|R_u| = 10$) com o conjunto $T_u$ de filmes
-        escondidos.
-\end{enumerate}
-
-A divisão resultou em $80\,672$ arestas de treino e $20\,164$ de teste. Os
-610 usuários aparecem no teste, com entre 4 e 540 filmes escondidos cada.
-Consideramos acerto qualquer filme do teste, independentemente da nota,
-coerente com a matriz $B$ binária (aresta = avaliou o filme).
-
-\subsection{Métricas}
-
-Para cada usuário $u$, com $K = 10$:
-\[
-  \text{precision@}K = \frac{|R_u \cap T_u|}{K},
-  \qquad
-  \text{recall@}K = \frac{|R_u \cap T_u|}{|T_u|},
-  \qquad
-  \text{hit@}K =
-  \begin{cases}
-    1, & \text{se } R_u \cap T_u \neq \emptyset,\\
-    0, & \text{caso contrário.}
-  \end{cases}
-\]
-Cada métrica é calculada por usuário e depois tirada a média sobre os 610
-usuários.
-
-\begin{itemize}
-  \item \textbf{precision@10} mede o aproveitamento da lista: quantos dos 10
-        filmes recomendados estavam entre os escondidos.
-  \item \textbf{recall@10} mede a cobertura: que fração dos filmes escondidos
-        o método reencontrou. Para usuários com mais de 10 filmes escondidos
-        ela é limitada a $10/|T_u|$, por isso tende a ser menor que a
-        precision.
-  \item \textbf{hit rate@10} é a fração de usuários com pelo menos um acerto,
-        isto é, que receberam ao menos uma recomendação útil.
-\end{itemize}
-
-As três métricas subestimam a qualidade real: um filme de que o usuário
-gostaria, mas que nunca avaliou, conta como erro. Por isso os valores
-absolutos são baixos, e o que importa é a comparação entre métodos sob o
-mesmo protocolo.
-
-\subsection{Resultados}
-
-A Tabela~\ref{tab:avaliacao} mostra o resultado para a semente 42.
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{lccc}
-\toprule
-Método & precision@10 & recall@10 & hit rate@10 \\
-\midrule
-Popularidade & 0{,}155 & 0{,}069 & 0{,}618 \\
-$BB^{\mathsf T}B$ & \textbf{0{,}216} & \textbf{0{,}113} & \textbf{0{,}723} \\
-\bottomrule
-\end{tabular}
-\caption{Avaliação com 20\% das arestas de cada usuário escondidas (semente 42).}
-\label{tab:avaliacao}
-\end{table}
-
-Para verificar que a diferença não depende do sorteio, repetimos o
-experimento com cinco sementes diferentes (Tabela~\ref{tab:sementes}).
-
-\begin{table}[ht]
-\centering
-\begin{tabular}{lccc}
-\toprule
-Método & precision@10 & recall@10 & hit rate@10 \\
-\midrule
-Popularidade & $0{,}162 \pm 0{,}004$ & $0{,}074 \pm 0{,}004$ & $0{,}635 \pm 0{,}012$ \\
-$BB^{\mathsf T}B$ & $0{,}220 \pm 0{,}003$ & $0{,}115 \pm 0{,}004$ & $0{,}738 \pm 0{,}009$ \\
-\bottomrule
-\end{tabular}
-\caption{Média $\pm$ desvio padrão sobre as sementes 1 a 5.}
-\label{tab:sementes}
-\end{table}
-
-$BB^{\mathsf T}B$ supera a popularidade nas três métricas. Em média, acerta
-cerca de 2{,}2 dos 10 filmes recomendados, contra 1{,}6, um ganho de
-aproximadamente 36\% em precision, e encontra ao menos um filme certo para
-74\% dos usuários, contra 64\%. A diferença entre os métodos (cerca de
-$0{,}06$ em precision) é mais de dez vezes maior que a variação entre
-sorteios, portanto não é efeito do acaso.
-
-Esse resultado complementa a Seção~\ref{sec:resultados-preliminares}: embora
-cerca de dois terços das recomendações de $BB^{\mathsf T}B$ coincidam com as
-da popularidade, os filmes em que os dois métodos diferem são escolhas
-melhores. A estrutura do grafo, isto é, \emph{quem} viu \emph{o quê}, traz
-informação que a simples contagem de espectadores não captura.
+\afazer{etapa 8: divisão treino/teste, precision@10, recall@10 e hit rate;
+comparar $BB^{\mathsf T}B$ com popularidade.}
 
 % =====================================================================
 \section{Melhoria: normalização pelo grau}

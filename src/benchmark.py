@@ -4,7 +4,7 @@ Divide as avaliações em conjuntos de treino e teste por usuário, reconstrói
 as matrizes de biadjacência apenas com as arestas de treino e compara quatro
 estratégias (Popularidade, Bipartido Binário, Bipartido Ponderado e Tripartido
 Ponderado) usando precision@K, recall@K, hit_rate@K, recall_baixo_grau@K,
-cobertura@K e grau_medio sobre itens relevantes (nota >= 4.0).
+cobertura@K (em porcentagem) e grau_medio sobre itens relevantes (nota >= 4.0).
 """
 import numpy as np
 import pandas as pd
@@ -44,7 +44,7 @@ def metricas(
     graus_treino: np.ndarray,
     limiar_baixo_grau: int = 10,
 ) -> dict[str, float]:
-    """Calcula métricas de predição de links e propriedades topológicas do grafo."""
+    """Calcula métricas de predição de links (%) e propriedades topológicas do grafo."""
     K = recomendacoes.shape[1]
     precisions, recalls, hits, recalls_bg = [], [], [], []
 
@@ -67,11 +67,13 @@ def metricas(
     grau_medio = float(np.mean(graus_treino[recomendacoes]))
 
     return {
-        f"precision@{K}": float(np.mean(precisions)),
-        f"recall@{K}": float(np.mean(recalls)),
-        f"hit_rate@{K}": float(np.mean(hits)),
-        f"recall_baixo_grau@{K}": float(np.mean(recalls_bg)) if recalls_bg else 0.0,
-        f"cobertura@{K}": float(cobertura),
+        f"precision@{K} (%)": float(np.mean(precisions)) * 100.0,
+        f"recall@{K} (%)": float(np.mean(recalls)) * 100.0,
+        f"hit_rate@{K} (%)": float(np.mean(hits)) * 100.0,
+        f"recall_baixo_grau@{K} (%)": (
+            float(np.mean(recalls_bg)) * 100.0 if recalls_bg else 0.0
+        ),
+        f"cobertura@{K} (%)": float(cobertura) * 100.0,
         "grau_medio": grau_medio,
     }
 
@@ -91,7 +93,7 @@ def buscar_melhor_alpha(
     a busca em grade.
     """
     if criterio is None:
-        criterio = f"precision@{K}"
+        criterio = f"precision@{K} (%)"
 
     S_colab = (B_treino @ B_treino.T @ B_treino).toarray()
     S_tags = (B_treino @ T @ T.T).toarray()
@@ -131,7 +133,7 @@ def avaliar(K: int = 10, alpha: float | None = None) -> pd.DataFrame:
 
     if alpha is None:
         alpha, _ = buscar_melhor_alpha(
-            B_treino, T, gabarito, graus_treino, K=K, criterio=f"precision@{K}"
+            B_treino, T, gabarito, graus_treino, K=K, criterio=f"precision@{K} (%)"
         )
 
     modelos = {
@@ -139,7 +141,7 @@ def avaliar(K: int = 10, alpha: float | None = None) -> pd.DataFrame:
         "2. Bipartido Binário": recomendar_bbtb(B_bin, K=K),
         "3. Bipartido Ponderado": recomendar_bbtb(B_treino, K=K),
         f"4. Tripartido Ponderado (alpha={alpha})": recomendar_bbtb(
-            B_treino,T=T, alpha=alpha, K=K
+            B_treino, T=T, alpha=alpha, K=K
         ),
     }
 
@@ -148,6 +150,7 @@ def avaliar(K: int = 10, alpha: float | None = None) -> pd.DataFrame:
     }
     return pd.DataFrame(resultados).T
 
+
 if __name__ == "__main__":
     tabela = avaliar()
-    print(tabela.round(4).to_string())
+    print(tabela.round(2).to_string())
