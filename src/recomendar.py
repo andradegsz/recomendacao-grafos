@@ -1,48 +1,74 @@
-"""Recomendador colaborativo baseado em passeios de comprimento 3 (B·Bᵀ·B).
+"""Recomendador colaborativo e híbrido baseado em passeios de comprimento 3.
 
-Calcula a matriz de pontuações S = B·Bᵀ·B, onde cada entrada S[u, i] conta o
-número de passeios de comprimento 3 entre o usuário u e o filme i no grafo
-bipartido, zerando itens já avaliados. Quando executado diretamente, exibe as
-Top-K recomendações para o primeiro usuário da base.
+Calcula a matriz de pontuações S = B·Bᵀ·B (grafo bipartido) ou
+S = B·Bᵀ·B + alpha·(B·T·Tᵀ) (grafo tripartido), bloqueando itens já
+avaliados com -inf. Quando executado diretamente, exibe as Top-K
+recomendações para o primeiro usuário da base.
 """
-
 import numpy as np
 import pandas as pd
+from scipy.sparse import csr_matrix
 
-from matriz import B, usuarios, filmes, idx_filme
 
+def pontuacao_bbtb(
+    B: csr_matrix,
+    T: csr_matrix | None = None,
+    alpha: float = 0.5,
+) -> np.ndarray:
+    """Calcula a pontuação S para cada par (usuário, filme) e mascara vistos.
 
-def pontuacao_bbtb(B):
-    """Matriz de pontuações S = B·Bᵀ·B (|U| x |I|), com os filmes já vistos zerados.
+    Args:
+        B: Matriz de biadjacência esparsa Usuários x Filmes (|U| x |I|).
+        T: Matriz de biadjacência esparsa Filmes x Tags (|I| x |T|), opcional.
+        alpha: Peso relativo dos caminhos que passam pelas tags (U -> I -> T -> I).
 
-    S[u,i] = nº de passeios de comprimento 3 de u até i.
+    Returns:
+        Matriz densa S de dimensão (|U|, |I|) com -inf nos itens já avaliados.
     """
-    S = B @ B.T @ B       # B·Bᵀ·B, da esquerda para a direita (B·Bᵀ é só |U| x |U|)
-    S = S.toarray()       # S é quase toda não nula (~99%), então densa é mais eficiente
-    S[B.nonzero()] = 0    # zera S[u,i] para cada aresta (u,i): filmes já vistos
+    S = B @ B.T @ B
+    if T is not None and alpha > 0:
+        S = S + alpha * (B @ T @ T.T)
+
+    S = S.toarray()
+    S[B.nonzero()] = -np.inf
     return S
 
 
-def recomendar_bbtb(B, K=10):
-    """Top-K por B·Bᵀ·B. Devolve uma matriz (|U|, K) com os índices das colunas recomendadas."""
-    S = pontuacao_bbtb(B)
-    # Para cada linha, os índices das colunas em ordem decrescente de pontuação
+def recomendar_bbtb(
+    B: csr_matrix,
+    T: csr_matrix | None = None,
+    alpha: float = 0.5,
+    K: int = 10,
+) -> np.ndarray:
+    """Retorna os índices dos Top-K filmes recomendados para cada usuário.
+
+    Args:
+        B: Matriz de biadjacência esparsa Usuários x Filmes (|U| x |I|).
+        T: Matriz de biadjacência esparsa Filmes x Tags (|I| x |T|), opcional.
+        alpha: Peso relativo da componente tripartida (tags).
+        K: Número de recomendações por usuário.
+
+    Returns:
+        Array de inteiros de dimensão (|U|, K) com os índices das colunas.
+    """
+    S = pontuacao_bbtb(B, T=T, alpha=alpha)
     return np.argsort(-S, axis=1)[:, :K]
 
 
 if __name__ == "__main__":
-    K = 10
-    S = pontuacao_bbtb(B)
-    top_k = recomendar_bbtb(B, K)   # formato (|U|, K)
+    from matriz import carregar_dados, montar_matrizes
 
-    print(S.shape)
-    print(S[0, idx_filme[1]])   # usuário 1 viu o filme 1 -> tem que dar 0
+    ratings, tags, mapeamentos = carregar_dados()
+    B, T = montar_matrizes(ratings, tags, mapeamentos)
 
-    # Traduz índice de coluna -> movieId -> título, para mostrar o resultado
     movies = pd.read_csv("data/ml-latest-small/movies.csv")
-    titulo = dict(zip(movies["movieId"], movies["title"]))
+    filme_por_idx = {idx: mid for mid, idx in mapeamentos["filme"].items()}
 
-    u = 0   # linha 0 = userId 1
-    print(f"\nTop-{K} para o usuário {usuarios[u]}:")
-    for posicao, i in enumerate(top_k[u], start=1):
-        print(f"{posicao:2d}. {titulo[filmes[i]]}  (pontuação {S[u, i]})")
+    recs = recomendar_bbtb(B, T=T, alpha=0.5, K=10)
+    primeiro_uid = next(iter(mapeamentos["usuario"]))
+    u_idx = mapeamentos["usuario"][primeiro_uid]
+    top_ids = [filme_por_idx[i] for i in recs[u_idx]]
+
+    top_filmes = movies.set_index("movieId").loc[top_ids, ["title", "genres"]]
+    print(f"Top-10 recomendações tripartidas para o usuário {primeiro_uid}:\n")
+    print(top_filmes)
