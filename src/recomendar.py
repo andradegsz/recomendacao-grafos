@@ -1,7 +1,7 @@
 """Recomendador colaborativo e híbrido baseado em passeios de comprimento 3.
 
 Calcula a matriz de pontuações S = B·Bᵀ·B (grafo bipartido) ou
-S = B·Bᵀ·B + alpha·(B·T·Tᵀ) (grafo tripartido), bloqueando itens já
+S = B·Bᵀ·B + alpha·(B·T·Gᵀ) (grafo tripartido), bloqueando itens já
 avaliados com -inf. Quando executado diretamente, exibe as Top-K
 recomendações para o primeiro usuário da base.
 """
@@ -19,7 +19,7 @@ def pontuacao_bbtb(
 
     Args:
         B: Matriz de biadjacência esparsa Usuários x Filmes (|U| x |I|).
-        T: Matriz de biadjacência esparsa Filmes x Tags (|I| x |T|), opcional.
+        T: Matriz de biadjacência esparsa Filmes x Gêneros (|I| x |T|), opcional.
         alpha: Peso relativo dos caminhos que passam pelas tags (U -> I -> T -> I).
 
     Returns:

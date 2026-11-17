@@ -8,28 +8,20 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 
+
 def carregar_dados(
-    dir: str = "data/ml-latest-small",
+    pasta_dados: str = "data/ml-latest-small",
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, dict]]:
-    """Lê os arquivos CSV e gera os mapeamentos globais fixos de índices.
+    """Lê os arquivos CSV e gera os mapeamentos globais fixos de índices."""
+    ratings = pd.read_csv(f"{pasta_dados}/ratings.csv")
+    tags = pd.read_csv(f"{pasta_dados}/tags.csv")
 
-    Args:
-        dir: Caminho do diretório contendo `ratings.csv` e `tags.csv`.
+    tags_unicas = sorted(tags["tag"].dropna().str.strip().str.lower().unique())
 
-    Returns:
-        Tupla (ratings, tags, mapeamentos), onde `mapeamentos` contém os
-        dicionários 'usuario', 'filme' e 'tag'.
-    """
-    ratings = pd.read_csv(f"{dir}/ratings.csv")
-    tags = pd.read_csv(f"{dir}/tags.csv")
-
-    tags_limpas = tags["tag"].dropna().str.strip().str.lower().unique()
-
-    # Mapear IDs para índices para uso em matrizes
     mapeamentos = {
         "usuario": {uid: k for k, uid in enumerate(sorted(ratings["userId"].unique()))},
         "filme": {mid: k for k, mid in enumerate(sorted(ratings["movieId"].unique()))},
-        "tag": {tag: k for k, tag in enumerate(sorted(tags_limpas))},
+        "tag": {tag: k for k, tag in enumerate(tags_unicas)},
     }
     return ratings, tags, mapeamentos
 
@@ -58,7 +50,7 @@ def _montar_T(
     idx_filme: dict,
     idx_tag: dict,
 ) -> csr_matrix:
-    """Constrói a matriz de biadjacência binária T (Filmes x Tags)."""
+    """Constrói a matriz de biadjacência T (Filmes x Tags) normalizada por L2."""
     pares = (
         pd.DataFrame({
             "i_idx": df["movieId"].map(idx_filme),
@@ -68,7 +60,8 @@ def _montar_T(
         .drop_duplicates()
     )
 
-    valores = np.ones(len(pares), dtype=np.float64)
+    qtd_tags_filme = pares.groupby("i_idx")["t_idx"].transform("count")
+    valores = 1.0 / np.sqrt(qtd_tags_filme)
 
     return csr_matrix(
         (valores, (pares["i_idx"].astype(int), pares["t_idx"].astype(int))),
@@ -81,19 +74,11 @@ def montar_matrizes(
     tags_df: pd.DataFrame,
     mapeamentos: dict[str, dict],
 ) -> tuple[csr_matrix, csr_matrix]:
-    """Constrói em conjunto as matrizes B (Usuários x Filmes) e T (Filmes x Tags).
-
-    Args:
-        ratings_df: DataFrame com as colunas 'userId', 'movieId' e 'rating'.
-        tags_df: DataFrame com as colunas 'movieId' e 'tag'.
-        mapeamentos: Dicionário retornado por `carregar_dados`.
-
-    Returns:
-        Tupla (B, T) com as matrizes esparsas alinhadas pelo índice de filmes.
-    """
+    """Constrói em conjunto as matrizes B (Usuários x Filmes) e T (Filmes x Tags)."""
     B = _montar_B(ratings_df, mapeamentos["usuario"], mapeamentos["filme"])
     T = _montar_T(tags_df, mapeamentos["filme"], mapeamentos["tag"])
     return B, T
+
 
 if __name__ == "__main__":
     ratings, tags, mapeamentos = carregar_dados()
