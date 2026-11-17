@@ -1,3 +1,11 @@
+"""Recomendador baseline baseado na popularidade (grau dos filmes).
+
+Implementa `recomendar_popularidade`, que ranqueia os filmes ainda não vistos
+por cada usuário de acordo com seu grau no grafo bipartido (número total de
+avaliações recebidas). Quando executado diretamente, exibe o Top-10 para o
+primeiro usuário da base.
+"""
+
 import numpy as np
 import pandas as pd
 

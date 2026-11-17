@@ -1,3 +1,10 @@
+"""Avaliação dos algoritmos de recomendação em grafo bipartido.
+
+Divide as avaliações em conjuntos de treino e teste por usuário, reconstrói
+a matriz de biadjacência apenas com as arestas de treino e compara os métodos
+de recomendação usando as métricas precision@K, recall@K e hit rate@K.
+"""
+
 import numpy as np
 
 from matriz import montar_B, ratings, idx_usuario, idx_filme

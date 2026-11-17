@@ -1,3 +1,11 @@
+"""Construção da matriz de biadjacência esparsa do grafo usuário-filme.
+
+Carrega os dados de avaliações do MovieLens (`ratings.csv`), define os
+mapeamentos entre identificadores originais (`userId`, `movieId`) e índices
+matriciais, e expõe a função `montar_B` junto à matriz esparsa global `B`
+(formato CSR de dimensão |U| x |I|).
+"""
+
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
@@ -31,5 +39,5 @@ B = montar_B(ratings, idx_usuario, idx_filme)
 
 
 if __name__ == "__main__":
-    print(len(usuarios), len(filmes))   # 610 9724
-    print(B.shape, B.nnz)               # (610, 9724) 100836
+    print(len(usuarios), len(filmes))
+    print(B.shape, B.nnz)
