@@ -100,12 +100,12 @@ def executar_experimento(pasta_dados: str = "data/ml-latest-small", K: int = 10)
 
         linhas_alpha.append({
             "alpha": a,
-            "Gêneros_prec@10": mg[f"precision@{K}"],
-            "Tags_prec@10": mt[f"precision@{K}"],
-            "Gêneros_hit@10": mg[f"hit_rate@{K}"],
-            "Tags_hit@10": mt[f"hit_rate@{K}"],
+            f"Gêneros_prec@{K} (%)": mg[f"precision@{K} (%)"],
+            f"Tags_prec@{K} (%)": mt[f"precision@{K} (%)"],
+            f"Gêneros_hit@{K} (%)": mg[f"hit_rate@{K} (%)"],
+            f"Tags_hit@{K} (%)": mt[f"hit_rate@{K} (%)"],
         })
-    print("\n2. SENSIBILIDADE A ALPHA\n", pd.DataFrame(linhas_alpha).set_index("alpha").round(4).to_string())
+    print("\n2. SENSIBILIDADE A ALPHA\n", pd.DataFrame(linhas_alpha).set_index("alpha").round(2).to_string())
 
     # 3. Impacto final
     modelos = {
@@ -117,7 +117,7 @@ def executar_experimento(pasta_dados: str = "data/ml-latest-small", K: int = 10)
     tabela_final = pd.DataFrame(
         {nome: metricas(recs, gabarito, graus_treino) for nome, recs in modelos.items()}
     ).T
-    print("\n3. IMPACTO FINAL NAS MÉTRICAS\n", tabela_final.round(4).to_string())
+    print("\n3. IMPACTO FINAL NAS MÉTRICAS\n", tabela_final.round(2).to_string())
 
 
 if __name__ == "__main__":
