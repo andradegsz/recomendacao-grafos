@@ -31,6 +31,7 @@ recomendacao-grafos/
 │   ├── matriz.py          # carrega os dados e monta as matrizes B e T
 │   ├── recomendar.py      # recomendador B·Bᵀ·B (bipartido) e tripartido
 │   ├── popularidade.py    # baseline: filmes de maior grau
+│   ├── vies.py            # tabelas de viés de popularidade do relatório (B binária)
 │   ├── benchmark.py       # avaliação treino/teste comparando os modelos
 │   └── topologias.py      # comparação Gêneros × Tags como terceira partição
 └── requirements.txt
@@ -74,6 +75,7 @@ Todos os comandos devem ser executados **a partir da raiz do repositório**, poi
 | `python src/matriz.py` | Monta B e T e mostra suas dimensões |
 | `python src/recomendar.py` | Top-10 tripartido para o usuário 1 |
 | `python src/popularidade.py` | Top-10 por popularidade para o usuário 1 |
+| `python src/vies.py` | Top-10 por B·Bᵀ·B binária para o usuário 1 e indicadores de viés de popularidade (base inteira) |
 | `python src/benchmark.py` | Tabela comparativa: Popularidade, Bipartido Binário, Bipartido Ponderado e Tripartido |
 | `python src/topologias.py` | Propriedades das partições de gêneros e tags, sensibilidade a α e comparação final |
 
