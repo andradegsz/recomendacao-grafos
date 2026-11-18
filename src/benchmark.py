@@ -97,7 +97,8 @@ def buscar_melhor_alpha(
 
     S_colab = (B_treino @ B_treino.T @ B_treino).toarray()
     S_tags = (B_treino @ T @ T.T).toarray()
-    vistos = B_treino.nonzero()
+    coo = B_treino.tocoo()  # nonzero() ignoraria as arestas de peso 0
+    vistos = (coo.row, coo.col)
 
     resultados = {}
     for alpha in alphas:

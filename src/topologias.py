@@ -86,7 +86,8 @@ def executar_experimento(pasta_dados: str = "data/ml-latest-small", K: int = 10)
     S_colab = (B_treino @ B_treino.T @ B_treino).toarray()
     S_gen = (B_treino @ G @ G.T).toarray()
     S_tag = (B_treino @ T @ T.T).toarray()
-    vistos = B_treino.nonzero()
+    coo = B_treino.tocoo()  # nonzero() ignoraria as arestas de peso 0
+    vistos = (coo.row, coo.col)
 
     linhas_alpha = []
     for a in np.round(np.arange(0.0, 0.45, 0.05), 2):

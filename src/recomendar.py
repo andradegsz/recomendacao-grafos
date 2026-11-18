@@ -30,7 +30,8 @@ def pontuacao_bbtb(
         S = S + alpha * (B @ T @ T.T)
 
     S = S.toarray()
-    S[B.nonzero()] = -np.inf
+    coo = B.tocoo()  # posições guardadas, incluindo pesos 0 (nota = média do usuário)
+    S[coo.row, coo.col] = -np.inf
     return S
 
 
