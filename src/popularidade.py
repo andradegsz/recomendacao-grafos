@@ -22,7 +22,8 @@ def recomendar_popularidade(B: csr_matrix, K: int = 10) -> np.ndarray:
     """
     graus = B.getnnz(axis=0).astype(np.float64)
     scores = np.tile(graus, (B.shape[0], 1))
-    scores[B.nonzero()] = -np.inf
+    coo = B.tocoo()  # posições guardadas, incluindo pesos 0 (nota = média do usuário)
+    scores[coo.row, coo.col] = -np.inf
     return np.argsort(-scores, axis=1)[:, :K]
 
 
