@@ -137,6 +137,129 @@ Para cada usuário $u$, recomendamos os $k$ filmes $i$ com $B_{ui} = 0$ de maior
 $S_{ui}$. A pontuação não é uma nota prevista nem uma probabilidade; serve
 apenas para ordenar.
 
+\subsection{Grafo tripartido: incluindo as tags}
+
+O modelo bipartido só enxerga quem assistiu o quê. Para usar também o
+\emph{conteúdo} dos filmes, acrescentamos um terceiro conjunto de vértices
+$T$, formado pelas tags (etiquetas como ``sci-fi'', ``romance'',
+``pixar''), com uma aresta $\{i, t\}$ sempre que o filme $i$ recebeu a
+tag $t$. O grafo passa a ter vértices $U \cup I \cup T$, e as arestas só
+ligam usuário--filme ou filme--tag.
+
+\begin{definicao}
+A \emph{matriz filme--tag} é $M \in \{0,1\}^{|I| \times |T|}$, com
+\[
+  M_{it} =
+  \begin{cases}
+    1, & \text{se o filme } i \text{ recebeu a tag } t,\\
+    0, & \text{caso contrário.}
+  \end{cases}
+\]
+\end{definicao}
+
+% Obs.: chamamos de M (e não de G ou T) porque G já é o nome do grafo
+% e T é o nome do conjunto de tags. Troquem se o grupo preferir outra letra.
+
+\paragraph{$MM^{\mathsf T}$ (filme $\times$ filme).}
+\[
+  (MM^{\mathsf T})_{ij} = \sum_{t \in T} M_{it} M_{jt}.
+\]
+O termo $M_{it}M_{jt}$ vale 1 quando os filmes $i$ e $j$ têm a tag $t$.
+Assim, $(MM^{\mathsf T})_{ij}$ é o número de tags em comum entre $i$ e $j$,
+ou seja, o número de passeios $i \to t \to j$ de comprimento 2. É uma
+medida de semelhança de \emph{conteúdo} entre filmes.
+
+\paragraph{$BMM^{\mathsf T}$ (usuário $\times$ filme).}
+\[
+  (BMM^{\mathsf T})_{ui} = \sum_{i' \in I} B_{ui'}\,(MM^{\mathsf T})_{i'i}.
+\]
+Cada filme $i'$ que $u$ viu contribui com o número de tags que ele
+compartilha com $i$. Logo $(BMM^{\mathsf T})_{ui}$ conta os passeios de
+comprimento 3 da forma $u \to i' \to t \to i$: ``você viu $i'$, que tem a
+tag $t$, e $i$ também tem a tag $t$''. Enquanto $BB^{\mathsf T}B$ é
+filtragem \emph{colaborativa} (passa por outros usuários),
+$BMM^{\mathsf T}$ é filtragem \emph{por conteúdo} (passa pelas tags).
+
+\paragraph{Pontuação híbrida.}
+As duas matrizes têm o mesmo formato $|U| \times |I|$, então podem ser
+somadas:
+\[
+  S = BB^{\mathsf T}B + \alpha\, BMM^{\mathsf T}, \qquad \alpha \geq 0.
+\]
+$S_{ui}$ soma os passeios $u \to i' \to v \to i$ (via usuários) com os
+passeios $u \to i' \to t \to i$ (via tags), estes últimos com peso
+$\alpha$. O parâmetro controla o equilíbrio: $\alpha = 0$ recupera o
+modelo bipartido, e $\alpha$ grande faz o conteúdo dominar. Como as duas
+parcelas contam coisas diferentes e podem ter ordens de grandeza
+diferentes, $\alpha$ também serve para colocá-las na mesma escala. A regra
+de recomendação é a mesma: os $k$ filmes não vistos de maior $S_{ui}$.
+
+\paragraph{Exemplo.}
+No exemplo da Seção~3, considere as tags \emph{ação}, \emph{romance} e
+\emph{animação}: Matrix tem \emph{ação}; Titanic, \emph{romance};
+Toy Story, \emph{animação}; e Up, \emph{romance} e \emph{animação}.
+O grafo tripartido resultante está na Figura~\ref{fig:tripartido}.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    usr/.style={circle, draw, fill=blue!15, minimum size=1.1cm, font=\small},
+    itm/.style={rectangle, draw, fill=orange!20, minimum width=2cm,
+                minimum height=0.7cm, font=\small},
+    tag/.style={rectangle, rounded corners, draw, fill=green!15,
+                minimum width=1.8cm, minimum height=0.7cm, font=\small}]
+  \node[usr] (ana)   at (0, 0)    {Ana};
+  \node[usr] (bruno) at (0, -1.6) {Bruno};
+  \node[usr] (carla) at (0, -3.2) {Carla};
+  \node[itm] (mat) at (4.5, 0.4)   {Matrix};
+  \node[itm] (tit) at (4.5, -0.9)  {Titanic};
+  \node[itm] (toy) at (4.5, -2.2)  {Toy Story};
+  \node[itm] (up)  at (4.5, -3.5)  {Up};
+  \node[tag] (aca) at (9, 0)    {ação};
+  \node[tag] (rom) at (9, -1.6) {romance};
+  \node[tag] (ani) at (9, -3.2) {animação};
+  \draw (ana) -- (mat);   \draw (ana) -- (tit);
+  \draw (bruno) -- (mat); \draw (bruno) -- (toy); \draw (bruno) -- (up);
+  \draw (carla) -- (tit); \draw (carla) -- (toy);
+  \draw[dashed] (mat) -- (aca); \draw[dashed] (tit) -- (rom);
+  \draw[dashed] (toy) -- (ani); \draw[dashed] (up) -- (rom);
+  \draw[dashed] (up) -- (ani);
+\end{tikzpicture}
+\caption{Grafo tripartido do exemplo: usuários, filmes e tags. As arestas
+tracejadas são as da matriz $M$.}
+\label{fig:tripartido}
+\end{figure}
+
+Com linhas (Matrix, Titanic, Toy Story, Up) e colunas
+(ação, romance, animação):
+\[
+  M = \begin{pmatrix}
+    1 & 0 & 0\\
+    0 & 1 & 0\\
+    0 & 0 & 1\\
+    0 & 1 & 1
+  \end{pmatrix},
+  \qquad
+  MM^{\mathsf T} = \begin{pmatrix}
+    1 & 0 & 0 & 0\\
+    0 & 1 & 0 & 1\\
+    0 & 0 & 1 & 1\\
+    0 & 1 & 1 & 2
+  \end{pmatrix},
+  \qquad
+  BMM^{\mathsf T} = \begin{pmatrix}
+    1 & 1 & \mathbf{0} & \mathbf{1}\\
+    1 & \mathbf{1} & 2 & 3\\
+    \mathbf{0} & 1 & 1 & \mathbf{2}
+  \end{pmatrix}.
+\]
+Para Carla, o modelo bipartido dava \mbox{Matrix $= 2$} e \mbox{Up $= 1$}. A parcela de
+tags dá \mbox{Matrix $= 0$} e \mbox{Up $= 2$}, pois Up compartilha \emph{romance} com
+Titanic e \emph{animação} com Toy Story, filmes que Carla viu. Com
+$\alpha = 1$, a pontuação final fica \mbox{Matrix $= 2$} e \mbox{Up $= 3$}, e a
+recomendação de Carla muda para \emph{Up}: um filme parecido com o que ela
+gosta, e não apenas um filme visto por usuários parecidos com ela.
+
 % =====================================================================
 \section{Exemplo ilustrativo}
 % =====================================================================
@@ -342,8 +465,107 @@ pelo grau, descritas a seguir.
 \section{Avaliação}
 % =====================================================================
 
-\afazer{etapa 8: divisão treino/teste, precision@10, recall@10 e hit rate;
-comparar $BB^{\mathsf T}B$ com popularidade.}
+\paragraph{Protocolo.}
+Para cada usuário, separamos aleatoriamente 20\% das avaliações para
+\emph{teste} e usamos o restante (\emph{treino}) para montar as matrizes
+$B$ e $M$. Cada modelo gera, só com o treino, uma lista $R_u$ de $K = 10$
+filmes para cada usuário $u$. Consideramos \emph{relevantes} os filmes do
+teste com nota pelo menos $4{,}0$:
+\[
+  \mathrm{Rel}_u = \{\, i : (u, i) \text{ está no teste e a nota é } \geq 4{,}0 \,\}.
+\]
+As médias são tomadas sobre o conjunto $U'$ dos usuários com
+$\mathrm{Rel}_u \neq \emptyset$, e $\deg(i)$ denota o grau do filme $i$ no
+grafo de treino.
+
+\subsection{Métricas de acerto}
+
+\paragraph{Precision@$K$.} Fração da lista que acertou:
+\[
+  \mathrm{Precision@}K = \frac{1}{|U'|} \sum_{u \in U'}
+  \frac{|R_u \cap \mathrm{Rel}_u|}{K}.
+\]
+
+\paragraph{Recall@$K$.} Fração dos relevantes que apareceram na lista:
+\[
+  \mathrm{Recall@}K = \frac{1}{|U'|} \sum_{u \in U'}
+  \frac{|R_u \cap \mathrm{Rel}_u|}{|\mathrm{Rel}_u|}.
+\]
+
+\paragraph{Hit rate@$K$.} Fração dos usuários com pelo menos um acerto:
+\[
+  \mathrm{HR@}K = \frac{1}{|U'|} \sum_{u \in U'}
+  \mathbf{1}\bigl[\, R_u \cap \mathrm{Rel}_u \neq \emptyset \,\bigr].
+\]
+
+\subsection{Métricas de viés de popularidade}
+
+As três métricas acima medem apenas se o modelo acerta. Como vimos na
+Seção de resultados preliminares, recomendar sempre os filmes mais
+populares já garante muitos acertos. Por isso usamos também três métricas
+que medem \emph{o que} está sendo recomendado.
+
+\paragraph{Recall de baixo grau.}
+Seja $I_{\text{baixo}}$ o conjunto dos filmes de \emph{cauda longa}: os que
+ficam fora dos 20\% de maior grau no treino. O recall de baixo grau é o
+recall calculado só sobre esses filmes:
+\[
+  \mathrm{Recall}_{\text{baixo}}\mathrm{@}K = \frac{1}{|U''|} \sum_{u \in U''}
+  \frac{|R_u \cap \mathrm{Rel}_u \cap I_{\text{baixo}}|}
+       {|\mathrm{Rel}_u \cap I_{\text{baixo}}|},
+\]
+onde $U''$ são os usuários com $\mathrm{Rel}_u \cap I_{\text{baixo}} \neq
+\emptyset$. Ele mede se o modelo consegue acertar filmes pouco conhecidos,
+que são justamente os que o usuário teria mais dificuldade de encontrar
+sozinho. Um recomendador por popularidade tem recall de baixo grau
+praticamente nulo.
+
+\paragraph{Cobertura.}
+Fração do catálogo que aparece em alguma lista:
+\[
+  \mathrm{Cobertura@}K = \frac{\bigl|\bigcup_{u \in U} R_u\bigr|}{|I|}.
+\]
+Em termos do grafo, é a fração de vértices de $I$ alcançados pelas
+recomendações. Com o $BB^{\mathsf T}B$ binário, os top-10 dos 610 usuários
+somam apenas 153 filmes distintos (Tabela~\ref{tab:vies}), uma cobertura
+de $153/9\,724 \approx 1{,}6\%$.
+
+\paragraph{Grau médio.}
+Grau médio dos filmes recomendados:
+\[
+  \overline{\deg}\mathrm{@}K = \frac{1}{|U|\,K} \sum_{u \in U} \sum_{i \in R_u} \deg(i).
+\]
+Quanto maior, mais o modelo se concentra em vértices de grau alto, ou
+seja, em filmes populares. Serve para medir diretamente o efeito descrito
+nos resultados preliminares: vértices de grau alto atraem passeios.
+
+\paragraph{Leitura conjunta.}
+Para as métricas de acerto e para o recall de baixo grau e a cobertura,
+maior é melhor. O grau médio não tem um valor ``certo'', mas um valor
+menor com acerto parecido indica recomendações mais personalizadas. Em
+geral há um compromisso: reduzir o viés de popularidade costuma custar um
+pouco de precision, e as seis métricas juntas mostram esse equilíbrio.
+
+\subsection{Resultados}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lcccccc}
+\toprule
+Modelo & Prec@10 & Rec@10 & HR@10 & Rec$_{\text{baixo}}$@10 & Cob@10 & $\overline{\deg}$@10 \\
+\midrule
+Popularidade          & -- & -- & -- & -- & -- & -- \\
+Bipartido binário     & -- & -- & -- & -- & -- & -- \\
+Bipartido ponderado   & -- & -- & -- & -- & -- & -- \\
+Tripartido ponderado  & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\caption{Comparação dos modelos ($K = 10$, $\alpha = 0{,}5$).}
+\label{tab:avaliacao}
+\end{table}
+
+\afazer{preencher a Tabela~\ref{tab:avaliacao} com a saída de
+\texttt{src/benchmark.py} e comentar os resultados.}
 
 % =====================================================================
 \section{Melhoria: normalização pelo grau}
