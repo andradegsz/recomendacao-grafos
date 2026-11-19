@@ -346,9 +346,75 @@ Seção~\ref{sec:vies} (pesos pelas notas e uma terceira partição).}
 
 \subsection{Grafo ponderado}\label{sec:ponderado}
 
-\afazer{peso $B_{ui} = (r_{ui} - \bar r_u)/\lVert r_u - \bar r_u \rVert$;
-$BB^{\mathsf T}$ vira a correlação entre usuários; pesos negativos fazem
-$S_{ui}$ somar pesos de passeios em vez de contá-los.}
+No modelo binário, uma avaliação de meia estrela e uma de cinco estrelas
+geram a mesma aresta: o grafo registra \emph{que} o usuário viu o filme,
+mas não \emph{se} gostou. A primeira extensão coloca a nota na aresta.
+
+\begin{definicao}
+Seja $r_{ui}$ a nota que o usuário $u$ deu ao filme $i$ e $\bar r_u$ a
+média das notas de $u$ no treino. A \emph{matriz de pesos}
+$W \in \mathbb{R}^{|U| \times |I|}$ é dada por
+\[
+  W_{ui} =
+  \begin{cases}
+    \dfrac{r_{ui} - \bar r_u}{\sqrt{\sum_{j} (r_{uj} - \bar r_u)^2}},
+      & \text{se } \{u, i\} \in E,\\[2ex]
+    0, & \text{caso contrário,}
+  \end{cases}
+\]
+onde a soma do denominador percorre os filmes $j$ avaliados por $u$.
+\end{definicao}
+
+O numerador \emph{centra} a nota: o peso é positivo se $u$ gostou de $i$
+mais do que costuma gostar dos filmes, e negativo se gostou menos. Isso
+corrige o fato de que cada pessoa usa a escala de um jeito (para um
+usuário exigente, 3{,}5 pode ser uma nota boa). O denominador
+\emph{normaliza} a linha, de modo que $\sum_i W_{ui}^2 = 1$ (salvo o caso degenerado discutido
+abaixo):
+quem avaliou muitos filmes não ganha peso só por isso. Por exemplo, um
+usuário com notas 5, 4 e 3 tem média 4, diferenças $1, 0, -1$ e norma
+$\sqrt 2$, e portanto pesos $0{,}71$, $0$ e $-0{,}71$.
+
+\paragraph{$WW^{\mathsf T}$: semelhança entre usuários.}
+Como antes,
+\[
+  (WW^{\mathsf T})_{uv} = \sum_{i \in I} W_{ui} W_{vi},
+\]
+mas agora a soma não conta filmes em comum: ela é o produto interno entre
+as linhas de $u$ e $v$, que têm norma 1. Logo $(WW^{\mathsf T})_{uv}$ é o
+cosseno entre os vetores de notas centradas dos dois usuários, um número
+entre $-1$ e $1$ que funciona como uma correlação entre os gostos: perto
+de 1 se os dois gostam e desgostam dos mesmos filmes, negativo se os
+gostos são opostos.
+
+\paragraph{$WW^{\mathsf T}W$: soma de pesos de passeios.}
+A pontuação
+\[
+  S_{ui} = (WW^{\mathsf T}W)_{ui} = \sum_{v \in U} (WW^{\mathsf T})_{uv}\, W_{vi}
+\]
+soma, para cada usuário $v$ que avaliou $i$, a semelhança entre $u$ e $v$
+vezes o quanto $v$ gostou de $i$. Um filme sobe quando usuários parecidos
+com $u$ gostaram dele e desce quando eles não gostaram. A mesma indução do
+Teorema~\ref{teo:passeios} mostra que, numa matriz com pesos, a entrada
+$(u, i)$ do produto é a soma, sobre todos os passeios de $u$ a $i$, do
+produto dos pesos das arestas do passeio. Assim, $S_{ui}$ continua sendo
+uma soma sobre os mesmos passeios $u \to i' \to v \to i$ do modelo
+binário; só que cada passeio passa a valer
+$W_{ui'}\,W_{vi'}\,W_{vi}$ em vez de 1.
+
+\paragraph{Consequências.}
+\begin{itemize}
+  \item Os pesos podem ser negativos (na base completa, 46\,104 das
+        100\,836 arestas, cerca de 46\%), então $S_{ui}$ pode ser negativo e deixa de ser uma
+        contagem. Continua valendo que só a ordem importa.
+  \item Uma nota igual à média do usuário gera peso 0 (240 arestas na
+        base), mas a aresta existe: o usuário viu o filme. Por isso os
+        filmes já vistos são identificados pela estrutura do grafo, e não
+        pelos valores de $W$.
+  \item Um usuário que deu a mesma nota a todos os filmes tem todas as
+        diferenças nulas e, portanto, linha nula em $W$ (há um caso na
+        base). Para ele, o modelo ponderado não tem informação.
+\end{itemize}
 
 \subsection{Grafo tripartido: incluindo as tags}\label{sec:tripartido}
 
@@ -587,7 +653,7 @@ $B \in \{0,1\}^{|U| \times |I|}$, que conta os passeios de comprimento 3
 entre $u$ e $i$.
 
 \paragraph{3. Bipartido ponderado.}
-A mesma fórmula $S = BB^{\mathsf T}B$, mas com a matriz de pesos da
+A pontuação $S = WW^{\mathsf T}W$, com a matriz de pesos $W$ da
 Seção~\ref{sec:ponderado}, em que cada aresta carrega a nota do usuário
 centrada na sua média. Os passeios deixam de valer 1 e passam a valer o
 produto dos pesos das suas arestas.
@@ -595,9 +661,10 @@ produto dos pesos das suas arestas.
 \paragraph{4. Tripartido ponderado.}
 A pontuação híbrida da Seção~\ref{sec:tripartido},
 \[
-  S = BB^{\mathsf T}B + \alpha\, BMM^{\mathsf T},
+  S = WW^{\mathsf T}W + \alpha\, WMM^{\mathsf T},
 \]
-com a matriz de pesos $B$ do modelo anterior e a matriz filme--tag $M$.
+ou seja, a da Seção~\ref{sec:tripartido} com $B$ trocada pela matriz de
+pesos $W$ do modelo anterior, e com a matriz filme--tag $M$.
 O valor $\alpha = 0{,}35$ foi escolhido numa busca em grade sobre
 $\{0;\ 0{,}05;\ \dots;\ 0{,}5\}$, como o que maximiza a precision.
 
