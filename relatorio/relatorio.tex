@@ -29,8 +29,19 @@
 \maketitle
 
 \begin{abstract}
-\afazer{resumo de 5--8 linhas, escrever por último: problema, modelo (grafo
-bipartido e contagem de passeios), base MovieLens, principais resultados.}
+Modelamos a recomendação de filmes como um grafo bipartido entre usuários
+e filmes e pontuamos cada par $(u, i)$ pela entrada de $BB^{\mathsf T}B$,
+que, pela contagem de passeios em potências da matriz de adjacência, é o
+número de passeios de comprimento 3 entre $u$ e $i$. Na base MovieLens
+(610 usuários, 9\,724 filmes, 100\,836 avaliações), esse modelo supera
+um \emph{baseline} de popularidade (15{,}4\% contra 11{,}4\% de precision
+no top-10), mas herda um viés previsto pela teoria: vértices de grau alto
+atraem passeios, e as recomendações se concentram em poucos filmes
+populares. Estudamos duas extensões que mantêm a ideia de passeios:
+pesos nas arestas a partir das notas e uma terceira partição de tags ou
+gêneros. Com as tags, o acerto se mantém e a variedade de filmes
+recomendados cresce cerca de sete vezes; com os gêneros, genéricos
+demais, a precision cai.
 \end{abstract}
 
 % =====================================================================
