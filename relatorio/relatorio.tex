@@ -541,9 +541,58 @@ gosta, e não apenas um filme visto por usuários parecidos com ela.
 
 \subsection{Gêneros como terceira partição}\label{sec:generos}
 
-\afazer{tabela de propriedades de \texttt{src/topologias.py}: 19 gêneros
-cobrem 99,65\% dos filmes e a projeção liga 44,67\% dos pares; tags
-cobrem 15,98\% e ligam 0,03\%.}
+A terceira partição não precisa ser formada por tags. O arquivo
+\texttt{movies.csv} atribui a cada filme um ou mais dos 19 \emph{gêneros}
+da base (\emph{Drama}, \emph{Comedy}, \emph{Action} etc.). Trocando as tags
+pelos gêneros, obtemos outro grafo tripartido $U \cup I \cup C$, com a
+matriz filme--gênero $C \in \{0,1\}^{|I| \times |C|}$ definida como $M$, e
+a pontuação $S = WW^{\mathsf T}W + \alpha\, WCC^{\mathsf T}$.
+
+\paragraph{Normalização.}
+Na implementação, tanto $M$ quanto $C$ são normalizadas por linha: se o
+filme $i$ tem $n_i$ tags, cada uma das suas arestas vale $1/\sqrt{n_i}$
+em vez de 1. Com isso,
+\[
+  (MM^{\mathsf T})_{ij} = \frac{\text{tags em comum entre } i \text{ e } j}{\sqrt{n_i\, n_j}},
+\]
+que é o cosseno entre os conjuntos de tags dos dois filmes. Sem essa
+normalização, um filme com muitas tags pareceria semelhante a quase
+todos os outros.
+
+\paragraph{Duas partições muito diferentes.}
+A Tabela~\ref{tab:particoes} compara a estrutura das duas escolhas.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Medida & Gêneros ($C$) & Tags ($M$) \\
+\midrule
+Vértices na terceira partição & 19 & 1\,475 \\
+Arestas filme--atributo & 22\,012 & 3\,553 \\
+Filmes com ao menos um atributo & 99{,}65\% & 15{,}98\% \\
+Grau médio de um atributo & 1\,158{,}5 & 2{,}4 \\
+Grau máximo de um atributo & 4\,349 & 119 \\
+Pares de filmes ligados na projeção ($XX^{\mathsf T}$) & 44{,}67\% & 0{,}03\% \\
+\bottomrule
+\end{tabular}
+\caption{Estrutura das duas terceiras partições. A última linha é a
+fração dos pares de filmes distintos com ao menos um atributo em comum,
+isto é, ligados por um passeio $i \to x \to j$. Gerada por
+\texttt{src/topologias.py}.}
+\label{tab:particoes}
+\end{table}
+
+Os gêneros cobrem praticamente todo o catálogo, mas são poucos e muito
+genéricos: um único gênero (\emph{Drama}) está ligado a 4\,349 filmes, e
+quase metade dos pares de filmes compartilha algum gênero. Em termos do
+grafo, os vértices de gênero são \emph{hubs} de grau altíssimo, e a
+projeção $CC^{\mathsf T}$ é densa: dizer que dois filmes ``têm um gênero
+em comum'' quase não os distingue. As tags são o oposto: específicas
+(cada tag liga, em média, 2{,}4 filmes) e por isso informativas, mas
+esparsas, pois só 16\% dos filmes têm alguma tag. A
+Seção~\ref{sec:resultados} mostra como essa diferença aparece nas
+recomendações.
 
 % =====================================================================
 \section{Avaliação}\label{sec:avaliacao}
@@ -673,7 +722,7 @@ Os modelos 2, 3 e 4 formam uma sequência: cada um acrescenta uma
 informação ao anterior (primeiro as notas, depois as tags), o que permite
 ver o efeito de cada extensão separadamente.
 
-\subsection{Resultados}
+\subsection{Resultados}\label{sec:resultados}
 
 \begin{table}[ht]
 \centering
@@ -726,6 +775,44 @@ $u \to i' \to v \to i$. O tripartido é o único que alcança esses filmes,
 porque o passeio $u \to i' \to t \to i$ passa por uma tag e não depende
 de outros usuários terem visto $i$. Ainda assim, como só 16\% dos filmes
 têm alguma tag (Seção~\ref{sec:generos}), o efeito é pequeno.
+
+\paragraph{Tags contra gêneros.}
+A Tabela~\ref{tab:tags-generos} repete o modelo tripartido trocando as
+tags pelos gêneros (Seção~\ref{sec:generos}).
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Modelo & Prec@10 & Rec@10 & HR@10 & Rec$_{\text{baixo}}$@10 & Cob@10 & $\overline{\deg}$@10 \\
+\midrule
+Ponderado ($\alpha = 0$)            & 14{,}81 & 12{,}84 & 63{,}48 & 0{,}00 & 3{,}73 & 157{,}3 \\
+Gêneros, $\alpha = 0{,}05$          & 14{,}67 & 13{,}04 & 63{,}65 & 0{,}00 & 4{,}60 & 152{,}7 \\
+Gêneros, $\alpha = 0{,}35$          & 10{,}64 & 10{,}76 & 56{,}78 & 0{,}75 & 13{,}42 & 108{,}4 \\
+Tags, $\alpha = 0{,}35$             & 15{,}33 & 13{,}13 & 65{,}33 & 0{,}02 & 5{,}50 & 148{,}8 \\
+\bottomrule
+\end{tabular}
+\caption{Tripartido com gêneros e com tags ($K = 10$, semente 42; valores
+em \%, exceto o grau médio). Gerada por \texttt{src/topologias.py}.}
+\label{tab:tags-generos}
+\end{table}
+
+Com as tags, a precision sobe levemente à medida que $\alpha$ cresce, até
+$\alpha = 0{,}35$. Com os gêneros acontece o contrário: a precision cai a
+cada aumento de $\alpha$, de 14{,}81\% sem gêneros para 10{,}64\% com
+$\alpha = 0{,}35$, e mesmo o melhor valor ($\alpha = 0{,}05$) fica abaixo
+do modelo sem a terceira partição. A explicação é a estrutura da
+Tabela~\ref{tab:particoes}: como quase metade dos pares de filmes
+compartilha um gênero, a parcela $WCC^{\mathsf T}$ espalha pontuação por
+quase todo o catálogo e dilui o sinal colaborativo.
+
+Ao mesmo tempo, os gêneros com $\alpha = 0{,}35$ são o modelo com menor
+viés de popularidade de todo o trabalho: cobertura de 13{,}42\%, grau
+médio de 108 e o maior recall de baixo grau (0{,}75\%). Isso ilustra o
+compromisso descrito na Seção~\ref{sec:avaliacao}: diversificar demais
+custa acerto. As tags oferecem o melhor equilíbrio, reduzindo o viés sem
+perder precision.
 
 % =====================================================================
 \section{Conclusão}\label{sec:conclusao}
