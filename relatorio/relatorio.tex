@@ -827,7 +827,50 @@ perder precision.
 \section{Conclusão}\label{sec:conclusao}
 % =====================================================================
 
-\afazer{conclusão + limitações: $\alpha$ escolhido no próprio teste e uma única divisão treino/teste (semente 42).}
+Neste trabalho, modelamos um sistema de recomendação como um grafo
+bipartido entre usuários e filmes e mostramos que uma regra de
+recomendação simples sai diretamente da matemática discreta: pelo
+Teorema~\ref{teo:passeios}, a entrada $(u, i)$ de $BB^{\mathsf T}B$ conta
+os passeios de comprimento 3 entre $u$ e $i$, e recomendar os filmes com
+mais passeios é uma forma de filtragem colaborativa obtida só por
+contagem. Aplicado à base MovieLens, esse modelo acerta mais que o
+\emph{baseline} de popularidade (15{,}44\% contra 11{,}37\% de precision).
+
+A análise do grafo também explicou a principal fraqueza do modelo:
+vértices de grau alto atraem passeios, e por isso as recomendações se
+concentram em poucos filmes populares (153 filmes distintos para 610
+usuários). As duas extensões estudadas atacam esse viés sem abandonar a
+ideia de passeios. Os pesos pelas notas transformam $WW^{\mathsf T}$ numa
+medida de semelhança de gostos, e a terceira partição acrescenta passeios
+que passam pelo conteúdo dos filmes. Com as tags, o modelo tripartido
+mantém a precision dos modelos bipartidos e recomenda cerca de sete
+vezes mais filmes distintos. A comparação com os gêneros mostrou que a
+estrutura da terceira partição importa: atributos genéricos, ligados a
+quase todo o catálogo, diluem o sinal e pioram o acerto.
+
+\paragraph{Limitações.}
+\begin{itemize}
+  \item O parâmetro $\alpha$ foi escolhido pela precision no próprio
+        conjunto de teste, o que torna o resultado do modelo tripartido
+        levemente otimista. Uma avaliação mais rigorosa separaria um
+        conjunto de validação, dentro do treino, para essa escolha.
+  \item Usamos uma única divisão treino/teste (semente 42). As
+        diferenças de precision entre os três modelos em grafo, menores
+        que 1 ponto percentual, são da ordem da variação entre divisões
+        e não permitem ordená-los; as diferenças de cobertura e grau
+        médio, bem maiores, não têm esse problema.
+  \item Só 16\% dos filmes têm tags, o que limita o alcance da parcela
+        de conteúdo, e nenhum modelo recupera de fato a cauda longa.
+\end{itemize}
+
+\paragraph{Trabalhos futuros.}
+Além de corrigir as duas primeiras limitações, um passo natural é
+normalizar os passeios pelo grau dos vértices intermediários, como num
+passeio aleatório ou no PageRank personalizado, para que um filme ou
+usuário de grau alto não domine a soma apenas por ter muitas arestas.
+Outra possibilidade é combinar tags e gêneros numa mesma terceira
+partição, aproveitando a cobertura dos gêneros e a especificidade das
+tags.
 
 
 \begin{thebibliography}{9}
