@@ -575,22 +575,55 @@ bipartido binário (Seção~\ref{sec:bipartido}), bipartido ponderado
 
 \begin{table}[ht]
 \centering
+\small
 \begin{tabular}{lcccccc}
 \toprule
 Modelo & Prec@10 & Rec@10 & HR@10 & Rec$_{\text{baixo}}$@10 & Cob@10 & $\overline{\deg}$@10 \\
 \midrule
-Popularidade          & -- & -- & -- & -- & -- & -- \\
-Bipartido binário     & -- & -- & -- & -- & -- & -- \\
-Bipartido ponderado   & -- & -- & -- & -- & -- & -- \\
-Tripartido ponderado  & -- & -- & -- & -- & -- & -- \\
+Popularidade          & 11{,}37 &  9{,}13 & 53{,}77 & 0{,}00 & 0{,}57 & 197{,}9 \\
+Bipartido binário     & \textbf{15{,}44} & \textbf{13{,}94} & 63{,}82 & 0{,}00 & 0{,}79 & 188{,}3 \\
+Bipartido ponderado   & 14{,}81 & 12{,}84 & 63{,}48 & 0{,}00 & 3{,}73 & 157{,}3 \\
+Tripartido ponderado  & 15{,}33 & 13{,}13 & \textbf{65{,}33} & \textbf{0{,}02} & \textbf{5{,}50} & \textbf{148{,}8} \\
 \bottomrule
 \end{tabular}
-\caption{Comparação dos modelos ($K = 10$, $\alpha = 0{,}35$).}
+\caption{Comparação dos modelos ($K = 10$, $\alpha = 0{,}35$, divisão
+treino/teste com semente 42). Valores em \%, exceto o grau médio. Em
+negrito, o melhor valor de cada coluna (para $\overline{\deg}$, o menor).
+Gerada por \texttt{src/benchmark.py}.}
 \label{tab:avaliacao}
 \end{table}
 
-\afazer{preencher a Tabela~\ref{tab:avaliacao} com a saída de
-\texttt{src/benchmark.py} e comentar os resultados.}
+\paragraph{Os grafos superam a popularidade.}
+Os três modelos baseados em passeios acertam mais que o \emph{baseline}:
+cerca de 15\% de precision contra 11\%, e um hit rate cerca de 10 pontos
+percentuais maior. Ou seja, olhar para os vizinhos do usuário no grafo
+traz informação que o grau dos filmes, sozinho, não traz.
+
+\paragraph{Entre os modelos em grafo, o acerto é parecido.}
+As diferenças de precision e recall entre os modelos bipartido binário,
+bipartido ponderado e tripartido são menores que 1 ponto percentual. Nesta
+divisão o binário tem a maior precision e o tripartido o maior hit rate,
+mas diferenças desse tamanho são da mesma ordem da variação que se obtém
+trocando a semente da divisão treino/teste; por isso não as usamos para
+ordenar os três modelos.
+
+\paragraph{As extensões reduzem o viés de popularidade.}
+A diferença aparece nas métricas de viés. A cobertura passa de 0{,}79\%
+no binário para 3{,}73\% com os pesos e 5{,}50\% com as tags, ou seja, o
+tripartido recomenda cerca de sete vezes mais filmes distintos do
+catálogo. O grau médio dos recomendados cai de 188 para 149. Com acerto
+praticamente igual, o modelo passa a sugerir filmes menos óbvios, que é
+justamente o efeito que a Seção~\ref{sec:vies} pedia.
+
+\paragraph{A cauda longa continua fora de alcance.}
+O recall de baixo grau é zero em todos os modelos bipartidos e apenas
+0{,}02\% no tripartido. Isso não é um defeito da métrica: os modelos
+bipartidos simplesmente não recomendam filmes de grau baixo, pois um
+filme com poucos espectadores recebe poucos passeios
+$u \to i' \to v \to i$. O tripartido é o único que alcança esses filmes,
+porque o passeio $u \to i' \to t \to i$ passa por uma tag e não depende
+de outros usuários terem visto $i$. Ainda assim, como só 16\% dos filmes
+têm alguma tag (Seção~\ref{sec:generos}), o efeito é pequeno.
 
 % =====================================================================
 \section{Conclusão}\label{sec:conclusao}
