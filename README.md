@@ -8,7 +8,7 @@ Usuários e filmes são vértices de um grafo bipartido; há uma aresta entre o 
 S = B · Bᵀ · B
 ```
 
-que soma os passeios de comprimento 3 `u → i' → v → i` ("você viu i', o usuário v também viu i', e v viu i"). Para cada usuário, recomendamos os filmes ainda não vistos de maior pontuação.
+que soma os caminhos de comprimento 3 `u → i' → v → i` ("você viu i', o usuário v também viu i', e v viu i"). Para cada usuário, recomendamos os filmes ainda não vistos de maior pontuação.
 
 O modelo também é estendido para um **grafo tripartido**, acrescentando tags (ou gêneros) como terceiro conjunto de vértices:
 

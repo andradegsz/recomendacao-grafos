@@ -31,13 +31,13 @@
 \begin{abstract}
 Modelamos a recomendação de filmes como um grafo bipartido entre usuários
 e filmes e pontuamos cada par $(u, i)$ pela entrada de $BB^{\mathsf T}B$,
-que, pela contagem de passeios em potências da matriz de adjacência, é o
-número de passeios de comprimento 3 entre $u$ e $i$. Na base MovieLens
+que, pela contagem de caminhos em potências da matriz de adjacência, é o
+número de caminhos de comprimento 3 entre $u$ e $i$. Na base MovieLens
 (610 usuários, 9\,724 filmes, 100\,836 avaliações), esse modelo supera
 um \emph{baseline} de popularidade (15{,}4\% contra 11{,}4\% de precision
 no top-10), mas herda um viés previsto pela teoria: vértices de grau alto
-atraem passeios, e as recomendações se concentram em poucos filmes
-populares. Estudamos duas extensões que mantêm a ideia de passeios:
+atraem caminhos, e as recomendações se concentram em poucos filmes
+populares. Estudamos duas extensões que mantêm a ideia de caminhos:
 pesos nas arestas a partir das notas e uma terceira partição de tags ou
 gêneros. Com as tags, o acerto se mantém e a variedade de filmes
 recomendados cresce cerca de sete vezes; com os gêneros, genéricos
@@ -49,7 +49,7 @@ demais, a precision cai.
 % =====================================================================
 
 
-\indent Atualmente, os algoritmos de recomendação desempenham um papel crucial em praticamente qualquer tipo de produto ou serviço digital. Tendo isso em vista, o presente projeto propõe a construção de uma solução baseada em grafos, em que os vértices representam usuários, produtos e categorias, e as arestas indicam as interações entre eles (como usuário-produto e produto-categoria). Para validar a abordagem, a implementação utilizou como estudo de caso a indústria de cinema e streaming, empregando uma base de dados de avaliações de usuários com o objetivo de recomendar títulos inéditos por meio de passeios estruturados no grafo.
+\indent Atualmente, os algoritmos de recomendação desempenham um papel crucial em praticamente qualquer tipo de produto ou serviço digital. Tendo isso em vista, o presente projeto propõe a construção de uma solução baseada em grafos, em que os vértices representam usuários, produtos e categorias, e as arestas indicam as interações entre eles (como usuário-produto e produto-categoria). Para validar a abordagem, a implementação utilizou como estudo de caso a indústria de cinema e streaming, empregando uma base de dados de avaliações de usuários com o objetivo de recomendar títulos inéditos por meio de caminhos estruturados no grafo.
 
 A ideia central do trabalho consiste em mapear e analisar os caminhos formados no grafo entre o usuário e os itens ainda não avaliados por ele. A partir das propriedades e características desses trajetos, o algoritmo pontua e seleciona os filmes mais adequados, baseando-se no histórico de consumo e nas preferências anteriores do indivíduo.
 
@@ -101,17 +101,31 @@ do lema do aperto de mãos:
   \sum_{u \in U} \deg(u) = \sum_{i \in I} \deg(i) = |E|.
 \]
 
-\subsection{Contagem de passeios}
+\subsection{Contagem de caminhos}
 
-\begin{teorema}\label{teo:passeios}
+\begin{definicao}
+Dado um grafo $G = (V, E)$ e vértices $v_0, v_n \in V$, um \emph{caminho} de
+comprimento $n$ de $v_0$ a $v_n$ é uma sequência que alterna $n+1$ vértices e
+$n$ arestas, com possíveis repetições, começando em $v_0$ e terminando em
+$v_n$:
+\[
+  (v_0, e_1, v_1, e_2, \dots, e_n, v_n), \qquad e_i = \{v_{i-1}, v_i\}
+  \text{ para } i = 1, \dots, n.
+\]
+Um caminho é \emph{simples} se não possui vértices repetidos. Como o grafo
+deste trabalho é simples, escrevemos os caminhos apenas pela sequência de
+vértices, como $v_0 \to v_1 \to \dots \to v_n$.
+\end{definicao}
+
+\begin{teorema}\label{teo:caminhos}
 Seja $A$ a matriz de adjacência de um grafo. Para todo $k \geq 1$,
-$(A^k)_{xy}$ é o número de passeios de comprimento $k$ de $x$ a $y$.
+$(A^k)_{xy}$ é o número de caminhos de comprimento $k$ de $x$ a $y$.
 \end{teorema}
 
 \begin{proof}
 \afazer{prova por indução em $k$. Base: $k = 1$ (definição de $A$). Passo:
-$(A^{k+1})_{xy} = \sum_z (A^k)_{xz} A_{zy}$; todo passeio de comprimento
-$k+1$ de $x$ a $y$ é um passeio de comprimento $k$ de $x$ a algum $z$
+$(A^{k+1})_{xy} = \sum_z (A^k)_{xz} A_{zy}$; todo caminho de comprimento
+$k+1$ de $x$ a $y$ é um caminho de comprimento $k$ de $x$ a algum $z$
 seguido da aresta $\{z, y\}$. Depois, mostrar que $(A^3)$ restrita ao bloco
 $U \times I$ é exatamente $BB^{\mathsf T}B$.}
 \end{proof}
@@ -128,7 +142,7 @@ $U \times I$ é exatamente $BB^{\mathsf T}B$.}
 \]
 O produto $B_{ui}B_{vi}$ vale 1 exatamente quando $u$ e $v$ avaliaram $i$.
 Logo $(BB^{\mathsf T})_{uv}$ é o número de filmes em comum entre $u$ e $v$,
-que é também o número de passeios de comprimento 2 de $u$ a $v$
+que é também o número de caminhos de comprimento 2 de $u$ a $v$
 ($u \to i \to v$). A diagonal é o grau do usuário, e a matriz é simétrica,
 pois $(BB^{\mathsf T})^{\mathsf T} = BB^{\mathsf T}$.
 
@@ -136,21 +150,21 @@ pois $(BB^{\mathsf T})^{\mathsf T} = BB^{\mathsf T}$.
 \[
   S_{ui} = (BB^{\mathsf T}B)_{ui} = \sum_{v \in U} (BB^{\mathsf T})_{uv}\, B_{vi}.
 \]
-$S_{ui}$ conta os passeios de comprimento 3 da forma
+$S_{ui}$ conta os caminhos de comprimento 3 da forma
 $u \to i' \to v \to i$: ``você viu $i'$, o usuário $v$ também viu $i'$, e $v$
 viu $i$''. Cada usuário $v$ que viu $i$ contribui com peso igual ao número de
 filmes que tem em comum com $u$. É uma forma de filtragem colaborativa obtida
 apenas por contagem.
 
 
-\paragraph{Passeios e caminhos.}
-O teorema conta \emph{passeios}, que podem repetir vértices. Por exemplo,
-se $u$ viu $i$, o passeio $u \to i \to u \to i$ existe; logo $S_{ui} \geq 1$
-para todo filme já visto. Por isso esses filmes são excluídos da
-recomendação. Já para um filme $i$ que $u$ \emph{não} viu, todo passeio
-$u \to i' \to v \to i$ é um caminho simples: $v \neq u$ (pois $v$ viu $i$ e
-$u$ não) e $i' \neq i$ (pois $u$ viu $i'$ e não viu $i$). Assim, nos itens
-candidatos à recomendação, passeios e caminhos coincidem.
+\paragraph{Caminhos e caminhos simples.}
+O teorema conta todos os caminhos, inclusive os que repetem vértices. Por
+exemplo, se $u$ viu $i$, o caminho $u \to i \to u \to i$ existe; logo
+$S_{ui} \geq 1$ para todo filme já visto. Por isso esses filmes são excluídos
+da recomendação. Já para um filme $i$ que $u$ \emph{não} viu, todo caminho
+$u \to i' \to v \to i$ é simples: $v \neq u$ (pois $v$ viu $i$ e $u$ não) e
+$i' \neq i$ (pois $u$ viu $i'$ e não viu $i$). Assim, nos itens candidatos à
+recomendação, $S_{ui}$ conta exatamente os caminhos simples de comprimento 3.
 
 \paragraph{Regra de recomendação.}
 Para cada usuário $u$, recomendamos os $K$ filmes $i$ com $B_{ui} = 0$ de maior
@@ -366,7 +380,7 @@ A explicação vem da própria fórmula: em
 $S_{ui} = \sum_v (BB^{\mathsf T})_{uv} B_{vi}$, um filme com muitos
 espectadores tem muitos termos não nulos, e os usuários de maior peso
 (muitos filmes em comum com $u$) tendem a ser os que viram muitos filmes,
-inclusive os populares. Vértices de grau alto atraem passeios. Esse viés
+inclusive os populares. Vértices de grau alto atraem caminhos. Esse viés
 motiva as extensões da Seção~\ref{sec:extensoes} e a comparação com um
 \emph{baseline} de popularidade na Seção~\ref{sec:avaliacao}.
 
@@ -376,10 +390,10 @@ motiva as extensões da Seção~\ref{sec:extensoes} e a comparação com um
 
 A Seção~\ref{sec:vies} mostrou que o modelo $BB^{\mathsf T}B$ favorece
 os filmes de grau alto, e a causa está na própria contagem: um filme
-com muitos espectadores recebe muitos passeios, quer o usuário vá
+com muitos espectadores recebe muitos caminhos, quer o usuário vá
 gostar dele ou não. Para reduzir esse viés, o grafo precisa carregar
 mais informação do que apenas ``quem viu o quê''. Exploramos duas formas
-de fazer isso, sem sair da ideia de pontuar por passeios: colocar
+de fazer isso, sem sair da ideia de pontuar por caminhos: colocar
 \emph{pesos} nas arestas, usando as notas
 (Seção~\ref{sec:ponderado}), e acrescentar uma \emph{terceira partição}
 de vértices que descreve o conteúdo dos filmes, formada por tags
@@ -429,7 +443,7 @@ entre $-1$ e $1$ que funciona como uma correlação entre os gostos: perto
 de 1 se os dois gostam e desgostam dos mesmos filmes, negativo se os
 gostos são opostos.
 
-\paragraph{$WW^{\mathsf T}W$: soma de pesos de passeios.}
+\paragraph{$WW^{\mathsf T}W$: soma de pesos de caminhos.}
 A pontuação
 \[
   S_{ui} = (WW^{\mathsf T}W)_{ui} = \sum_{v \in U} (WW^{\mathsf T})_{uv}\, W_{vi}
@@ -437,11 +451,11 @@ A pontuação
 soma, para cada usuário $v$ que avaliou $i$, a semelhança entre $u$ e $v$
 vezes o quanto $v$ gostou de $i$. Um filme sobe quando usuários parecidos
 com $u$ gostaram dele e desce quando eles não gostaram. A mesma indução do
-Teorema~\ref{teo:passeios} mostra que, numa matriz com pesos, a entrada
-$(u, i)$ do produto é a soma, sobre todos os passeios de $u$ a $i$, do
-produto dos pesos das arestas do passeio. Assim, $S_{ui}$ continua sendo
-uma soma sobre os mesmos passeios $u \to i' \to v \to i$ do modelo
-binário; só que cada passeio passa a valer
+Teorema~\ref{teo:caminhos} mostra que, numa matriz com pesos, a entrada
+$(u, i)$ do produto é a soma, sobre todos os caminhos de $u$ a $i$, do
+produto dos pesos das arestas do caminho. Assim, $S_{ui}$ continua sendo
+uma soma sobre os mesmos caminhos $u \to i' \to v \to i$ do modelo
+binário; só que cada caminho passa a valer
 $W_{ui'}\,W_{vi'}\,W_{vi}$ em vez de 1.
 
 \paragraph{Consequências.}
@@ -487,7 +501,7 @@ A \emph{matriz filme--tag} é $M \in \{0,1\}^{|I| \times |T|}$, com
 \]
 O termo $M_{it}M_{jt}$ vale 1 quando os filmes $i$ e $j$ têm a tag $t$.
 Assim, $(MM^{\mathsf T})_{ij}$ é o número de tags em comum entre $i$ e $j$,
-ou seja, o número de passeios $i \to t \to j$ de comprimento 2. É uma
+ou seja, o número de caminhos $i \to t \to j$ de comprimento 2. É uma
 medida de semelhança de \emph{conteúdo} entre filmes.
 
 \paragraph{$BMM^{\mathsf T}$ (usuário $\times$ filme).}
@@ -495,7 +509,7 @@ medida de semelhança de \emph{conteúdo} entre filmes.
   (BMM^{\mathsf T})_{ui} = \sum_{i' \in I} B_{ui'}\,(MM^{\mathsf T})_{i'i}.
 \]
 Cada filme $i'$ que $u$ viu contribui com o número de tags que ele
-compartilha com $i$. Logo $(BMM^{\mathsf T})_{ui}$ conta os passeios de
+compartilha com $i$. Logo $(BMM^{\mathsf T})_{ui}$ conta os caminhos de
 comprimento 3 da forma $u \to i' \to t \to i$: ``você viu $i'$, que tem a
 tag $t$, e $i$ também tem a tag $t$''. Enquanto $BB^{\mathsf T}B$ é
 filtragem \emph{colaborativa} (passa por outros usuários),
@@ -507,8 +521,8 @@ somadas:
 \[
   S = BB^{\mathsf T}B + \alpha\, BMM^{\mathsf T}, \qquad \alpha \geq 0.
 \]
-$S_{ui}$ soma os passeios $u \to i' \to v \to i$ (via usuários) com os
-passeios $u \to i' \to t \to i$ (via tags), estes últimos com peso
+$S_{ui}$ soma os caminhos $u \to i' \to v \to i$ (via usuários) com os
+caminhos $u \to i' \to t \to i$ (via tags), estes últimos com peso
 $\alpha$. O parâmetro controla o equilíbrio: $\alpha = 0$ recupera o
 modelo bipartido, e $\alpha$ grande faz o conteúdo dominar. Como as duas
 parcelas contam coisas diferentes e podem ter ordens de grandeza
@@ -621,7 +635,7 @@ Pares de filmes ligados na projeção ($XX^{\mathsf T}$) & 44{,}67\% & 0{,}03\% 
 \end{tabular}
 \caption{Estrutura das duas terceiras partições. A última linha é a
 fração dos pares de filmes distintos com ao menos um atributo em comum,
-isto é, ligados por um passeio $i \to x \to j$. Gerada por
+isto é, ligados por um caminho $i \to x \to j$. Gerada por
 \texttt{src/topologias.py}.}
 \label{tab:particoes}
 \end{table}
@@ -719,7 +733,7 @@ Grau médio dos filmes recomendados:
 \]
 Quanto maior, mais o modelo se concentra em vértices de grau alto, ou
 seja, em filmes populares. Serve para medir diretamente o efeito descrito
-na Seção~\ref{sec:vies}: vértices de grau alto atraem passeios.
+na Seção~\ref{sec:vies}: vértices de grau alto atraem caminhos.
 
 \paragraph{Leitura conjunta.}
 Para as métricas de acerto e para o recall de baixo grau e a cobertura,
@@ -747,13 +761,13 @@ $B$, esse modelo também usa o grafo, mas apenas um passo dele.
 
 \paragraph{2. Bipartido binário.}
 O modelo da Seção~\ref{sec:bipartido}: $S = BB^{\mathsf T}B$ com
-$B \in \{0,1\}^{|U| \times |I|}$, que conta os passeios de comprimento 3
+$B \in \{0,1\}^{|U| \times |I|}$, que conta os caminhos de comprimento 3
 entre $u$ e $i$.
 
 \paragraph{3. Bipartido ponderado.}
 A pontuação $S = WW^{\mathsf T}W$, com a matriz de pesos $W$ da
 Seção~\ref{sec:ponderado}, em que cada aresta carrega a nota do usuário
-centrada na sua média. Os passeios deixam de valer 1 e passam a valer o
+centrada na sua média. Os caminhos deixam de valer 1 e passam a valer o
 produto dos pesos das suas arestas.
 
 \paragraph{4. Tripartido ponderado.}
@@ -793,7 +807,7 @@ Gerada por \texttt{src/benchmark.py}.}
 \end{table}
 
 \paragraph{Os grafos superam a popularidade.}
-Os três modelos baseados em passeios acertam mais que o \emph{baseline}:
+Os três modelos baseados em caminhos acertam mais que o \emph{baseline}:
 cerca de 15\% de precision contra 11\%, e um hit rate cerca de 10 pontos
 percentuais maior. Ou seja, olhar para os vizinhos do usuário no grafo
 traz informação que o grau dos filmes, sozinho, não traz.
@@ -818,9 +832,9 @@ justamente o efeito que a Seção~\ref{sec:vies} pedia.
 O recall de baixo grau é zero em todos os modelos bipartidos e apenas
 0{,}02\% no tripartido. Isso não é um defeito da métrica: os modelos
 bipartidos simplesmente não recomendam filmes de grau baixo, pois um
-filme com poucos espectadores recebe poucos passeios
+filme com poucos espectadores recebe poucos caminhos
 $u \to i' \to v \to i$. O tripartido é o único que alcança esses filmes,
-porque o passeio $u \to i' \to t \to i$ passa por uma tag e não depende
+porque o caminho $u \to i' \to t \to i$ passa por uma tag e não depende
 de outros usuários terem visto $i$. Ainda assim, como só 16\% dos filmes
 têm alguma tag (Seção~\ref{sec:generos}), o efeito é pequeno.
 
@@ -874,18 +888,18 @@ perder precision.
 Neste trabalho, modelamos um sistema de recomendação como um grafo
 bipartido entre usuários e filmes e mostramos que uma regra de
 recomendação simples sai diretamente da matemática discreta: pelo
-Teorema~\ref{teo:passeios}, a entrada $(u, i)$ de $BB^{\mathsf T}B$ conta
-os passeios de comprimento 3 entre $u$ e $i$, e recomendar os filmes com
-mais passeios é uma forma de filtragem colaborativa obtida só por
+Teorema~\ref{teo:caminhos}, a entrada $(u, i)$ de $BB^{\mathsf T}B$ conta
+os caminhos de comprimento 3 entre $u$ e $i$, e recomendar os filmes com
+mais caminhos é uma forma de filtragem colaborativa obtida só por
 contagem. Aplicado à base MovieLens, esse modelo acerta mais que o
 \emph{baseline} de popularidade (15{,}44\% contra 11{,}37\% de precision).
 
 A análise do grafo também explicou a principal fraqueza do modelo:
-vértices de grau alto atraem passeios, e por isso as recomendações se
+vértices de grau alto atraem caminhos, e por isso as recomendações se
 concentram em poucos filmes populares (153 filmes distintos para 610
 usuários). As duas extensões estudadas atacam esse viés sem abandonar a
-ideia de passeios. Os pesos pelas notas transformam $WW^{\mathsf T}$ numa
-medida de semelhança de gostos, e a terceira partição acrescenta passeios
+ideia de caminhos. Os pesos pelas notas transformam $WW^{\mathsf T}$ numa
+medida de semelhança de gostos, e a terceira partição acrescenta caminhos
 que passam pelo conteúdo dos filmes. Com as tags, o modelo tripartido
 mantém a precision dos modelos bipartidos e recomenda cerca de sete
 vezes mais filmes distintos. A comparação com os gêneros mostrou que a
@@ -909,7 +923,7 @@ quase todo o catálogo, diluem o sinal e pioram o acerto.
 
 \paragraph{Trabalhos futuros.}
 Além de corrigir as duas primeiras limitações, um passo natural é
-normalizar os passeios pelo grau dos vértices intermediários, como num
+normalizar os caminhos pelo grau dos vértices intermediários, como num
 passeio aleatório ou no PageRank personalizado, para que um filme ou
 usuário de grau alto não domine a soma apenas por ter muitas arestas.
 Outra possibilidade é combinar tags e gêneros numa mesma terceira
