@@ -140,7 +140,7 @@ $u$ não) e $i' \neq i$ (pois $u$ viu $i'$ e não viu $i$). Assim, nos itens
 candidatos à recomendação, passeios e caminhos coincidem.
 
 \paragraph{Regra de recomendação.}
-Para cada usuário $u$, recomendamos os $k$ filmes $i$ com $B_{ui} = 0$ de maior
+Para cada usuário $u$, recomendamos os $K$ filmes $i$ com $B_{ui} = 0$ de maior
 $S_{ui}$. A pontuação não é uma nota prevista nem uma probabilidade; serve
 apenas para ordenar.
 
@@ -205,9 +205,11 @@ com o script \texttt{src/exemplo\_pequeno.py}.
 % =====================================================================
 
 Usamos a base \emph{MovieLens latest-small}, disponibilizada pelo GroupLens~\cite{harper2015}, com avaliações de 0{,}5 a 5{,}0 estrelas feitas
-por usuários do site MovieLens. Usamos o arquivo \texttt{ratings.csv} (pares
-usuário--filme--nota) e o \texttt{movies.csv} (títulos). As estatísticas da
-Tabela~\ref{tab:base} foram obtidas pelo script \texttt{src/explorar.py}.
+por usuários do site MovieLens. Usamos três arquivos: \texttt{ratings.csv}
+(triplas usuário--filme--nota, que formam as arestas de $B$ e $W$),
+\texttt{tags.csv} (pares filme--tag, que formam $M$) e \texttt{movies.csv}
+(títulos e gêneros dos filmes). As estatísticas da Tabela~\ref{tab:base}
+foram obtidas pelo script \texttt{src/explorar.py}.
 
 \begin{table}[ht]
 \centering
@@ -225,7 +227,8 @@ Filmes com grau 1 & 3\,446 (35\%) \\
 Densidade $|E| / (|U|\,|I|)$ & 1{,}7\% \\
 \bottomrule
 \end{tabular}
-\caption{Estatísticas do grafo bipartido construído a partir do MovieLens.}
+\caption{Estatísticas do grafo bipartido construído a partir do MovieLens.
+Gerada por \texttt{src/explorar.py}.}
 \label{tab:base}
 \end{table}
 
@@ -240,7 +243,7 @@ Observações:
         usuários com no mínimo 20 avaliações.
   \item Os graus dos filmes têm cauda longa: a média é cerca de 10, mas a
         mediana é 3. Poucos filmes concentram muitas avaliações
-        (\emph{Forrest Gump}: 329; \emph{Um Sonho de Liberdade}: 317;
+        (\emph{Forrest Gump}: 329; \emph{The Shawshank Redemption}: 317;
         \emph{Pulp Fiction}: 307).
   \item A densidade de 1{,}7\% significa que 98{,}3\% das
         $610 \times 9\,724 \approx 5{,}9$ milhões de entradas de $B$ são
@@ -254,16 +257,19 @@ Observações:
 O código está em Python, usando \texttt{pandas}, \texttt{numpy} e
 \texttt{scipy.sparse}.
 
-\paragraph{Construção de $B$ (\texttt{src/matriz.py}).}
+\paragraph{Construção das matrizes (\texttt{src/matriz.py}).}
 Os identificadores da base não são contíguos (\texttt{movieId} vai até
 193\,609, com apenas 9\,724 filmes). Por isso construímos explicitamente as
 bijeções da Definição de $B$: os identificadores distintos, em ordem
 crescente, recebem os índices $0, 1, \dots$. Cada aresta $(u, i)$ é então
-traduzida para a posição (linha, coluna), e $B$ é montada no formato esparso
-CSR (\emph{Compressed Sparse Row}), que armazena apenas as $|E|$ entradas não
-nulas. Conferimos que $B$ tem formato $610 \times 9\,724$, exatamente
-$100\,836$ entradas não nulas e que as somas de linhas e colunas reproduzem
-os graus da Tabela~\ref{tab:base}.
+traduzida para a posição (linha, coluna), e a matriz é montada no formato
+esparso CSR (\emph{Compressed Sparse Row}), que armazena apenas as $|E|$
+entradas da aresta. O arquivo \texttt{src/matriz.py} monta a matriz de
+pesos $W$ (Seção~\ref{sec:ponderado}) e a matriz filme--tag $M$
+(Seção~\ref{sec:tripartido}); a matriz binária $B$ é obtida das mesmas
+posições, trocando cada peso por 1. Conferimos que $B$ tem formato
+$610 \times 9\,724$, exatamente $100\,836$ entradas e que as somas de
+linhas e colunas reproduzem os graus da Tabela~\ref{tab:base}.
 
 \paragraph{Ordem das multiplicações.}
 Pela associatividade, $(BB^{\mathsf T})B = B(B^{\mathsf T}B)$, mas o custo é
@@ -277,15 +283,25 @@ nulas: em três passos, quase todo usuário alcança quase todo filme. Por isso
 $S$ é convertida para uma matriz densa antes da ordenação.
 
 \paragraph{Recomendação (\texttt{src/recomendar.py}).}
-As posições dos filmes já vistos (as entradas não nulas de $B$) são zeradas
-em $S$, e para cada linha são tomados os 10 índices de maior pontuação. O
-cálculo completo leva menos de um segundo.
+As posições dos filmes já vistos recebem pontuação $-\infty$ em $S$, e para
+cada linha são tomados os 10 índices de maior pontuação. Usamos $-\infty$, e
+não 0, porque nos modelos com pesos $S_{ui}$ pode ser negativo, e um filme
+visto com pontuação 0 ficaria à frente de filmes não vistos. Os filmes
+vistos são identificados pelas posições das arestas, e não pelos valores
+da matriz, porque na matriz de pesos uma aresta pode valer 0
+(Seção~\ref{sec:ponderado}). O cálculo completo leva menos de um segundo.
+
+\paragraph{Reprodutibilidade.}
+Cada tabela deste relatório indica o script que a gera. Todos estão na
+pasta \texttt{src/} e usam a semente fixa 42 na divisão treino/teste.
 
 % =====================================================================
 \section{Viés de popularidade}\label{sec:vies}
 % =====================================================================
 
-A Tabela~\ref{tab:top10} mostra as recomendações para o usuário 1.
+Nesta seção aplicamos o modelo bipartido binário $BB^{\mathsf T}B$ à base
+inteira, sem divisão treino/teste, para observar o que ele recomenda. A
+Tabela~\ref{tab:top10} mostra as recomendações para o usuário 1.
 
 \begin{table}[ht]
 \centering
@@ -305,7 +321,8 @@ A Tabela~\ref{tab:top10} mostra as recomendações para o usuário 1.
 10 & Aladdin (1992) & 8\,044 \\
 \bottomrule
 \end{tabular}
-\caption{Top-10 por $BB^{\mathsf T}B$ para o usuário 1.}
+\caption{Top-10 por $BB^{\mathsf T}B$ para o usuário 1 (base inteira).
+Gerada por \texttt{src/vies.py}.}
 \label{tab:top10}
 \end{table}
 
@@ -325,7 +342,8 @@ Correlação entre $S_{ui}$ e $\deg(i)$ (usuário 1) & 0{,}96 \\
 Usuários que recebem \emph{Star Wars: Episode IV} & 331 \\
 \bottomrule
 \end{tabular}
-\caption{Indicadores de viés de popularidade do recomendador $BB^{\mathsf T}B$.}
+\caption{Indicadores de viés de popularidade do recomendador
+$BB^{\mathsf T}B$ (base inteira). Gerada por \texttt{src/vies.py}.}
 \label{tab:vies}
 \end{table}
 
@@ -334,8 +352,8 @@ $S_{ui} = \sum_v (BB^{\mathsf T})_{uv} B_{vi}$, um filme com muitos
 espectadores tem muitos termos não nulos, e os usuários de maior peso
 (muitos filmes em comum com $u$) tendem a ser os que viram muitos filmes,
 inclusive os populares. Vértices de grau alto atraem passeios. Esse viés
-motiva a comparação com um \emph{baseline} de popularidade e a normalização
-pelo grau, descritas a seguir.
+motiva as extensões da Seção~\ref{sec:extensoes} e a comparação com um
+\emph{baseline} de popularidade na Seção~\ref{sec:avaliacao}.
 
 % =====================================================================
 \section{Extensões do modelo}\label{sec:extensoes}
@@ -480,7 +498,7 @@ $\alpha$. O parâmetro controla o equilíbrio: $\alpha = 0$ recupera o
 modelo bipartido, e $\alpha$ grande faz o conteúdo dominar. Como as duas
 parcelas contam coisas diferentes e podem ter ordens de grandeza
 diferentes, $\alpha$ também serve para colocá-las na mesma escala. A regra
-de recomendação é a mesma: os $k$ filmes não vistos de maior $S_{ui}$.
+de recomendação é a mesma: os $K$ filmes não vistos de maior $S_{ui}$.
 
 \paragraph{Exemplo.}
 No exemplo da Seção~\ref{sec:exemplo}, considere as tags \emph{ação}, \emph{romance} e
@@ -553,8 +571,9 @@ gosta, e não apenas um filme visto por usuários parecidos com ela.
 A terceira partição não precisa ser formada por tags. O arquivo
 \texttt{movies.csv} atribui a cada filme um ou mais dos 19 \emph{gêneros}
 da base (\emph{Drama}, \emph{Comedy}, \emph{Action} etc.). Trocando as tags
-pelos gêneros, obtemos outro grafo tripartido $U \cup I \cup C$, com a
-matriz filme--gênero $C \in \{0,1\}^{|I| \times |C|}$ definida como $M$, e
+pelos gêneros, obtemos outro grafo tripartido $U \cup I \cup \Gamma$, em
+que $\Gamma$ é o conjunto de gêneros, com a matriz filme--gênero
+$C \in \{0,1\}^{|I| \times |\Gamma|}$ definida como $M$, e
 a pontuação $S = WW^{\mathsf T}W + \alpha\, WCC^{\mathsf T}$.
 
 \paragraph{Normalização.}
@@ -610,7 +629,8 @@ recomendações.
 \paragraph{Protocolo.}
 Para cada usuário, separamos aleatoriamente 20\% das avaliações para
 \emph{teste} e usamos o restante (\emph{treino}) para montar as matrizes
-$B$ e $M$. Cada modelo gera, só com o treino, uma lista $R_u$ de $K = 10$
+$B$ e $W$; a matriz $M$ não depende das avaliações e é a mesma em todos
+os casos. Cada modelo gera, só com o treino, uma lista $R_u$ de $K = 10$
 filmes para cada usuário $u$. Consideramos \emph{relevantes} os filmes do
 teste com nota pelo menos $4{,}0$:
 \[
@@ -648,9 +668,12 @@ populares já garante muitos acertos. Por isso usamos também três métricas
 que medem \emph{o que} está sendo recomendado.
 
 \paragraph{Recall de baixo grau.}
-Seja $I_{\text{baixo}}$ o conjunto dos filmes de \emph{cauda longa}: os que
-ficam fora dos 20\% de maior grau no treino. O recall de baixo grau é o
-recall calculado só sobre esses filmes:
+Seja $I_{\text{baixo}}$ o conjunto dos filmes de \emph{cauda longa}: os de
+grau no máximo 10 no treino. Por causa da cauda longa da base, esse corte
+deixa de fora praticamente só os 20\% de filmes de maior grau (o corte
+exato dos 20\% cai em grau 9), e $I_{\text{baixo}}$ contém cerca de 80\%
+do catálogo. O recall de baixo grau é o recall calculado só sobre esses
+filmes:
 \[
   \mathrm{Recall}_{\text{baixo}}\mathrm{@}K = \frac{1}{|U''|} \sum_{u \in U''}
   \frac{|R_u \cap \mathrm{Rel}_u \cap I_{\text{baixo}}|}
@@ -668,9 +691,11 @@ Fração do catálogo que aparece em alguma lista:
   \mathrm{Cobertura@}K = \frac{\bigl|\bigcup_{u \in U} R_u\bigr|}{|I|}.
 \]
 Em termos do grafo, é a fração de vértices de $I$ alcançados pelas
-recomendações. Com o $BB^{\mathsf T}B$ binário, os top-10 dos 610 usuários
-somam apenas 153 filmes distintos (Tabela~\ref{tab:vies}), uma cobertura
-de $153/9\,724 \approx 1{,}6\%$.
+recomendações. Com o $BB^{\mathsf T}B$ binário na base inteira, os top-10
+dos 610 usuários somam apenas 153 filmes distintos (Tabela~\ref{tab:vies}),
+uma cobertura de $153/9\,724 \approx 1{,}6\%$. Na avaliação, o mesmo modelo
+é montado só com o treino, que tem menos arestas, e por isso a cobertura
+ali é ainda menor (Tabela~\ref{tab:avaliacao}).
 
 \paragraph{Grau médio.}
 Grau médio dos filmes recomendados:
