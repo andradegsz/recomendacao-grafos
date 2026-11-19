@@ -50,7 +50,9 @@ demais, a precision cai.
 
 
 \indent Atualmente, os algoritmos de recomendação desempenham um papel crucial em praticamente qualquer tipo de produto ou serviço digital. Tendo isso em vista, o presente projeto propõe a construção de uma solução baseada em grafos, em que os vértices representam usuários, produtos e categorias, e as arestas indicam as interações entre eles (como usuário-produto e produto-categoria). Para validar a abordagem, a implementação utilizou como estudo de caso a indústria de cinema e streaming, empregando uma base de dados de avaliações de usuários com o objetivo de recomendar títulos inéditos por meio de passeios estruturados no grafo.
+
 A ideia central do trabalho consiste em mapear e analisar os caminhos formados no grafo entre o usuário e os itens ainda não avaliados por ele. A partir das propriedades e características desses trajetos, o algoritmo pontua e seleciona os filmes mais adequados, baseando-se no histórico de consumo e nas preferências anteriores do indivíduo.
+
 Por fim, vale destacar que, apesar do domínio escolhido para este estudo, a arquitetura desenvolvida mantém sua relevância e versatilidade, podendo ser aplicada a qualquer ecossistema estruturado em usuários, itens e avaliações. Exemplos disso incluem plataformas de e-commerce de vestuário, serviços de streaming de música, livrarias digitais e marketplaces de eletrônicos, o que evidencia o alto potencial de generalização e escalabilidade do modelo proposto.
 
 
@@ -266,7 +268,9 @@ Observações:
 % =====================================================================
 
 O código está em Python, usando \texttt{pandas}, \texttt{numpy} e
-\texttt{scipy.sparse}.
+\texttt{scipy.sparse}, e está disponível em
+\url{https://github.com/andradegsz/recomendacao-grafos}, com instruções
+para baixar a base e executar cada script.
 
 \paragraph{Construção das matrizes (\texttt{src/matriz.py}).}
 Os identificadores da base não são contíguos (\texttt{movieId} vai até
@@ -753,12 +757,11 @@ centrada na sua média. Os passeios deixam de valer 1 e passam a valer o
 produto dos pesos das suas arestas.
 
 \paragraph{4. Tripartido ponderado.}
-A pontuação híbrida da Seção~\ref{sec:tripartido},
+A pontuação híbrida da Seção~\ref{sec:tripartido}, com $B$ trocada pela
+matriz de pesos $W$ do modelo anterior:
 \[
-  S = WW^{\mathsf T}W + \alpha\, WMM^{\mathsf T},
+  S = WW^{\mathsf T}W + \alpha\, WMM^{\mathsf T}.
 \]
-ou seja, a da Seção~\ref{sec:tripartido} com $B$ trocada pela matriz de
-pesos $W$ do modelo anterior, e com a matriz filme--tag $M$.
 O valor $\alpha = 0{,}35$ foi escolhido numa busca em grade sobre
 $\{0;\ 0{,}05;\ \dots;\ 0{,}5\}$, como o que maximiza a precision.
 
@@ -823,7 +826,12 @@ têm alguma tag (Seção~\ref{sec:generos}), o efeito é pequeno.
 
 \paragraph{Tags contra gêneros.}
 A Tabela~\ref{tab:tags-generos} repete o modelo tripartido trocando as
-tags pelos gêneros (Seção~\ref{sec:generos}).
+tags pelos gêneros (Seção~\ref{sec:generos}). Para os gêneros, mostramos
+dois valores de $\alpha$: 0{,}05, o melhor para os gêneros entre os
+valores positivos da busca em grade (com gêneros, nenhum $\alpha > 0$
+supera $\alpha = 0$), e 0{,}35, o mesmo valor das tags, para
+comparar as duas partições com o mesmo peso. A varredura completa de
+$\alpha$ está na saída de \texttt{src/topologias.py}.
 
 \begin{table}[ht]
 \centering
