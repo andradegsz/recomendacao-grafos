@@ -341,8 +341,17 @@ pelo grau, descritas a seguir.
 \section{Extensões do modelo}\label{sec:extensoes}
 % =====================================================================
 
-\afazer{parágrafo curto: as duas extensões abaixo atacam o viés da
-Seção~\ref{sec:vies} (pesos pelas notas e uma terceira partição).}
+A Seção~\ref{sec:vies} mostrou que o modelo $BB^{\mathsf T}B$ favorece
+os filmes de grau alto, e a causa está na própria contagem: um filme
+com muitos espectadores recebe muitos passeios, quer o usuário vá
+gostar dele ou não. Para reduzir esse viés, o grafo precisa carregar
+mais informação do que apenas ``quem viu o quê''. Exploramos duas formas
+de fazer isso, sem sair da ideia de pontuar por passeios: colocar
+\emph{pesos} nas arestas, usando as notas
+(Seção~\ref{sec:ponderado}), e acrescentar uma \emph{terceira partição}
+de vértices que descreve o conteúdo dos filmes, formada por tags
+(Seção~\ref{sec:tripartido}) ou por gêneros
+(Seção~\ref{sec:generos}).
 
 \subsection{Grafo ponderado}\label{sec:ponderado}
 
