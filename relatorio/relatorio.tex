@@ -566,10 +566,45 @@ pouco de precision, e as seis métricas juntas mostram esse equilíbrio.
 
 \subsection{Modelos comparados}\label{sec:modelos}
 
-\afazer{popularidade (\emph{baseline}: os filmes de maior grau não vistos),
-bipartido binário (Seção~\ref{sec:bipartido}), bipartido ponderado
-(Seção~\ref{sec:ponderado}) e tripartido com tags
-(Seção~\ref{sec:tripartido}).}
+Comparamos quatro modelos. Todos produzem uma pontuação para cada par
+$(u, i)$ e recomendam os $K$ filmes de maior pontuação que $u$ ainda não
+avaliou no treino; os filmes já avaliados recebem pontuação $-\infty$
+para nunca serem escolhidos.
+
+\paragraph{1. Popularidade (\emph{baseline}).}
+A pontuação é o grau do filme no grafo de treino,
+\[
+  S_{ui} = \deg(i),
+\]
+igual para todos os usuários. É o recomendador mais simples possível, que
+ignora quem é o usuário, e serve de referência: um modelo em grafo só vale
+a pena se fizer melhor que ele. Como $\deg(i)$ é a soma da coluna $i$ de
+$B$, esse modelo também usa o grafo, mas apenas um passo dele.
+
+\paragraph{2. Bipartido binário.}
+O modelo da Seção~\ref{sec:bipartido}: $S = BB^{\mathsf T}B$ com
+$B \in \{0,1\}^{|U| \times |I|}$, que conta os passeios de comprimento 3
+entre $u$ e $i$.
+
+\paragraph{3. Bipartido ponderado.}
+A mesma fórmula $S = BB^{\mathsf T}B$, mas com a matriz de pesos da
+Seção~\ref{sec:ponderado}, em que cada aresta carrega a nota do usuário
+centrada na sua média. Os passeios deixam de valer 1 e passam a valer o
+produto dos pesos das suas arestas.
+
+\paragraph{4. Tripartido ponderado.}
+A pontuação híbrida da Seção~\ref{sec:tripartido},
+\[
+  S = BB^{\mathsf T}B + \alpha\, BMM^{\mathsf T},
+\]
+com a matriz de pesos $B$ do modelo anterior e a matriz filme--tag $M$.
+O valor $\alpha = 0{,}35$ foi escolhido numa busca em grade sobre
+$\{0;\ 0{,}05;\ \dots;\ 0{,}5\}$, como o que maximiza a precision.
+
+\medskip
+Os modelos 2, 3 e 4 formam uma sequência: cada um acrescenta uma
+informação ao anterior (primeiro as notas, depois as tags), o que permite
+ver o efeito de cada extensão separadamente.
 
 \subsection{Resultados}
 
