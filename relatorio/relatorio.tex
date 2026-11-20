@@ -12,6 +12,7 @@
 \usepackage[hidelinks]{hyperref}
 
 \newtheorem{teorema}{Teorema}
+\newtheorem{corolario}{Corolário}
 \newtheorem{proposicao}{Proposição}
 \theoremstyle{definition}
 \newtheorem{definicao}{Definição}
@@ -123,12 +124,56 @@ $(A^k)_{xy}$ é o número de caminhos de comprimento $k$ de $x$ a $y$.
 \end{teorema}
 
 \begin{proof}
-\afazer{prova por indução em $k$. Base: $k = 1$ (definição de $A$). Passo:
-$(A^{k+1})_{xy} = \sum_z (A^k)_{xz} A_{zy}$; todo caminho de comprimento
-$k+1$ de $x$ a $y$ é um caminho de comprimento $k$ de $x$ a algum $z$
-seguido da aresta $\{z, y\}$. Depois, mostrar que $(A^3)$ restrita ao bloco
-$U \times I$ é exatamente $BB^{\mathsf T}B$.}
+Por indução em $k$.
+
+\emph{Base ($k = 1$).} Um caminho de comprimento 1 de $x$ a $y$ é formado
+por uma única aresta $\{x, y\}$. Como o grafo é simples, existe no máximo
+uma tal aresta, e ela existe exatamente quando $A_{xy} = 1$. Logo
+$(A^1)_{xy} = A_{xy}$ é o número de caminhos de comprimento 1 de $x$ a $y$.
+
+\emph{Passo de indução.} Suponha a afirmação válida para algum $k \geq 1$.
+Todo caminho de comprimento $k+1$ de $x$ a $y$,
+\[
+  x = v_0 \to v_1 \to \dots \to v_k \to v_{k+1} = y,
+\]
+se decompõe de modo único em um caminho de comprimento $k$ de $x$ até o
+penúltimo vértice $z = v_k$, seguido da aresta $\{z, y\}$. Reciprocamente,
+qualquer caminho de comprimento $k$ de $x$ até um vizinho $z$ de $y$,
+seguido da aresta $\{z, y\}$, é um caminho de comprimento $k+1$ de $x$ a
+$y$. Agrupando os caminhos pelo penúltimo vértice $z$ e usando a hipótese
+de indução, obtemos
+\[
+  \#\{\text{caminhos de comprimento } k+1 \text{ de } x \text{ a } y\}
+  = \sum_{z \in V} (A^k)_{xz}\, A_{zy}
+  = (A^{k+1})_{xy},
+\]
+pois $A_{zy}$ vale 1 quando $z$ é vizinho de $y$ e 0 caso contrário, de
+modo que só os vizinhos de $y$ contribuem para a soma. Isso completa a
+indução.
 \end{proof}
+
+\begin{corolario}\label{cor:bbtb}
+Seja $G$ bipartido, com matriz de biadjacência $B$. Para $u \in U$ e
+$i \in I$, $(BB^{\mathsf T}B)_{ui}$ é o número de caminhos de comprimento 3
+de $u$ a $i$.
+\end{corolario}
+
+\begin{proof}
+Multiplicando por blocos a matriz $A$ da seção anterior,
+\[
+  A^2 = \begin{pmatrix} BB^{\mathsf T} & 0 \\ 0 & B^{\mathsf T}B \end{pmatrix},
+  \qquad
+  A^3 = A^2 A = \begin{pmatrix} 0 & BB^{\mathsf T}B \\
+                               B^{\mathsf T}BB^{\mathsf T} & 0 \end{pmatrix}.
+\]
+O bloco de $A^3$ com linhas em $U$ e colunas em $I$ é exatamente
+$BB^{\mathsf T}B$, e pelo Teorema~\ref{teo:caminhos} suas entradas contam
+os caminhos de comprimento 3 de $u$ a $i$.
+\end{proof}
+
+Os blocos nulos também têm leitura combinatória: num grafo bipartido, todo
+caminho de comprimento par termina do mesmo lado em que começou, e todo
+caminho de comprimento ímpar termina do lado oposto.
 
 % =====================================================================
 \section{Modelo bipartido}\label{sec:bipartido}
@@ -150,7 +195,7 @@ pois $(BB^{\mathsf T})^{\mathsf T} = BB^{\mathsf T}$.
 \[
   S_{ui} = (BB^{\mathsf T}B)_{ui} = \sum_{v \in U} (BB^{\mathsf T})_{uv}\, B_{vi}.
 \]
-$S_{ui}$ conta os caminhos de comprimento 3 da forma
+Pelo Corolário~\ref{cor:bbtb}, $S_{ui}$ conta os caminhos de comprimento 3 da forma
 $u \to i' \to v \to i$: ``você viu $i'$, o usuário $v$ também viu $i'$, e $v$
 viu $i$''. Cada usuário $v$ que viu $i$ contribui com peso igual ao número de
 filmes que tem em comum com $u$. É uma forma de filtragem colaborativa obtida
@@ -254,8 +299,7 @@ Filmes com grau 1 & 3\,446 (35\%) \\
 Densidade $|E| / (|U|\,|I|)$ & 1{,}7\% \\
 \bottomrule
 \end{tabular}
-\caption{Estatísticas do grafo bipartido construído a partir do MovieLens.
-Gerada por \texttt{src/explorar.py}.}
+\caption{Estatísticas do grafo bipartido construído a partir do MovieLens.}
 \label{tab:base}
 \end{table}
 
@@ -321,7 +365,7 @@ da matriz, porque na matriz de pesos uma aresta pode valer 0
 (Seção~\ref{sec:ponderado}). O cálculo completo leva menos de um segundo.
 
 \paragraph{Reprodutibilidade.}
-Cada tabela deste relatório indica o script que a gera. Todos estão na
+Todos os scripts que criaram as tabelas deste relatório estão na
 pasta \texttt{src/} e usam a semente fixa 42 na divisão treino/teste.
 
 % =====================================================================
@@ -350,8 +394,7 @@ Tabela~\ref{tab:top10} mostra as recomendações para o usuário 1.
 10 & Aladdin (1992) & 8\,044 \\
 \bottomrule
 \end{tabular}
-\caption{Top-10 por $BB^{\mathsf T}B$ para o usuário 1 (base inteira).
-Gerada por \texttt{src/vies.py}.}
+\caption{Top-10 por $BB^{\mathsf T}B$ para o usuário 1 (base inteira).}
 \label{tab:top10}
 \end{table}
 
@@ -372,7 +415,7 @@ Usuários que recebem \emph{Star Wars: Episode IV} & 331 \\
 \bottomrule
 \end{tabular}
 \caption{Indicadores de viés de popularidade do recomendador
-$BB^{\mathsf T}B$ (base inteira). Gerada por \texttt{src/vies.py}.}
+$BB^{\mathsf T}B$ (base inteira).}
 \label{tab:vies}
 \end{table}
 
@@ -635,8 +678,7 @@ Pares de filmes ligados na projeção ($XX^{\mathsf T}$) & 44{,}67\% & 0{,}03\% 
 \end{tabular}
 \caption{Estrutura das duas terceiras partições. A última linha é a
 fração dos pares de filmes distintos com ao menos um atributo em comum,
-isto é, ligados por um caminho $i \to x \to j$. Gerada por
-\texttt{src/topologias.py}.}
+isto é, ligados por um caminho $i \to x \to j$.}
 \label{tab:particoes}
 \end{table}
 
@@ -801,8 +843,7 @@ Tripartido ponderado  & 15{,}33 & 13{,}13 & \textbf{65{,}33} & \textbf{0{,}02} &
 \end{tabular}
 \caption{Comparação dos modelos ($K = 10$, $\alpha = 0{,}35$, divisão
 treino/teste com semente 42). Valores em \%, exceto o grau médio. Em
-negrito, o melhor valor de cada coluna (para $\overline{\deg}$, o menor).
-Gerada por \texttt{src/benchmark.py}.}
+negrito, o melhor valor de cada coluna (para $\overline{\deg}$, o menor).}
 \label{tab:avaliacao}
 \end{table}
 
@@ -847,24 +888,6 @@ supera $\alpha = 0$), e 0{,}35, o mesmo valor das tags, para
 comparar as duas partições com o mesmo peso. A varredura completa de
 $\alpha$ está na saída de \texttt{src/topologias.py}.
 
-\begin{table}[ht]
-\centering
-\small
-\begin{tabular}{lcccccc}
-\toprule
-Modelo & Prec@10 & Rec@10 & HR@10 & Rec$_{\text{baixo}}$@10 & Cob@10 & $\overline{\deg}$@10 \\
-\midrule
-Ponderado ($\alpha = 0$)            & 14{,}81 & 12{,}84 & 63{,}48 & 0{,}00 & 3{,}73 & 157{,}3 \\
-Gêneros, $\alpha = 0{,}05$          & 14{,}67 & 13{,}04 & 63{,}65 & 0{,}00 & 4{,}60 & 152{,}7 \\
-Gêneros, $\alpha = 0{,}35$          & 10{,}64 & 10{,}76 & 56{,}78 & 0{,}75 & 13{,}42 & 108{,}4 \\
-Tags, $\alpha = 0{,}35$             & 15{,}33 & 13{,}13 & 65{,}33 & 0{,}02 & 5{,}50 & 148{,}8 \\
-\bottomrule
-\end{tabular}
-\caption{Tripartido com gêneros e com tags ($K = 10$, semente 42; valores
-em \%, exceto o grau médio). Gerada por \texttt{src/topologias.py}.}
-\label{tab:tags-generos}
-\end{table}
-
 Com as tags, a precision sobe levemente à medida que $\alpha$ cresce, até
 $\alpha = 0{,}35$. Com os gêneros acontece o contrário: a precision cai a
 cada aumento de $\alpha$, de 14{,}81\% sem gêneros para 10{,}64\% com
@@ -880,6 +903,27 @@ médio de 108 e o maior recall de baixo grau (0{,}75\%). Isso ilustra o
 compromisso descrito na Seção~\ref{sec:avaliacao}: diversificar demais
 custa acerto. As tags oferecem o melhor equilíbrio, reduzindo o viés sem
 perder precision.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Modelo & Prec@10 & Rec@10 & HR@10 & Rec$_{\text{baixo}}$@10 & Cob@10 & $\overline{\deg}$@10 \\
+\midrule
+Ponderado ($\alpha = 0$)            & 14{,}81 & 12{,}84 & 63{,}48 & 0{,}00 & 3{,}73 & 157{,}3 \\
+Gêneros, $\alpha = 0{,}05$          & 14{,}67 & 13{,}04 & 63{,}65 & 0{,}00 & 4{,}60 & 152{,}7 \\
+Gêneros, $\alpha = 0{,}35$          & 10{,}64 & 10{,}76 & 56{,}78 & 0{,}75 & 13{,}42 & 108{,}4 \\
+Tags, $\alpha = 0{,}35$             & 15{,}33 & 13{,}13 & 65{,}33 & 0{,}02 & 5{,}50 & 148{,}8 \\
+\bottomrule
+\end{tabular}
+\caption{Modelo tripartido ponderado com gêneros ou tags como terceira
+partição. A primeira linha ($\alpha = 0$) não usa terceira partição e
+equivale ao bipartido ponderado. Colunas como na
+Tabela~\ref{tab:avaliacao} ($K = 10$, semente 42; valores em \%, exceto
+o grau médio).}
+\label{tab:tags-generos}
+\end{table}
 
 % =====================================================================
 \section{Conclusão}\label{sec:conclusao}
