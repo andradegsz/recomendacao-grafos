@@ -24,7 +24,8 @@ onde **T** é a matriz filme × tag e α controla o peso da parcela de conteúdo
 recomendacao-grafos/
 ├── data/                  # base MovieLens (não versionada, ver abaixo)
 ├── relatorio/
-│   └── relatorio.tex      # relatório em LaTeX
+│   ├── relatorio_final.tex           # relatório em LaTeX
+│   └── Relatório_Trabalho_de_MD.pdf  # relatório compilado
 ├── src/
 │   ├── exemplo_pequeno.py # exemplo didático com 3 usuários e 4 filmes
 │   ├── explorar.py        # estatísticas do grafo (|U|, |I|, |E|, graus, densidade)
@@ -92,7 +93,7 @@ Para cada usuário, 20% das avaliações são separadas para teste (semente fixa
 
 ## Relatório
 
-O relatório está em `relatorio/relatorio.pdf`, junto com o código-fonte em LaTeX (`relatorio/relatorio.tex`).
+O relatório está em [`relatorio/Relatório_Trabalho_de_MD.pdf`](relatorio/Relatório_Trabalho_de_MD.pdf), junto com o código-fonte em LaTeX ([`relatorio/relatorio_final.tex`](relatorio/relatorio_final.tex)).
 
 ## Autores
 
